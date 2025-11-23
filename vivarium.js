@@ -99,16 +99,16 @@ class World {
             this.spawnFood(1);
         }
 
-        // Remove corpses after some time (increased to 300 frames for scavengers)
-        const deadCreatures = this.creatures.filter(c => !c.alive);
-        deadCreatures.forEach(c => {
-            if (this.time - c.age > 300) {
-                const index = this.creatures.indexOf(c);
-                if (index > -1) {
-                    this.creatures.splice(index, 1);
+        // Remove corpses after some time (300 frames for scavengers to find them)
+        this.creatures = this.creatures.filter(c => {
+            if (!c.alive && c.deathTime !== undefined) {
+                const timeSinceDeath = this.time - c.deathTime;
+                if (timeSinceDeath > 300) {
                     this.stats.totalDeaths++;
+                    return false; // Remove corpse
                 }
             }
+            return true; // Keep creature
         });
 
         // Update statistics

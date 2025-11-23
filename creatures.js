@@ -38,7 +38,7 @@ export class Creature {
 
         // Die from old age or starvation
         if (this.age > this.maxLifespan || this.energy <= 0) {
-            this.die();
+            this.die(world.time);
             return;
         }
 
@@ -238,7 +238,7 @@ export class Creature {
         prey.energy -= attackPower;
 
         if (prey.energy <= 0) {
-            prey.die();
+            prey.die(world.time);
             // Gain energy from kill
             this.energy = Math.min(this.energy + 50, this.maxEnergy);
         }
@@ -267,9 +267,12 @@ export class Creature {
 
             // Create offspring
             const childGenome = this.genome.crossover(mate.genome).mutate();
+            // Spawn child with better spacing to avoid clustering
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 30 + Math.random() * 20; // 30-50 pixels away
             const child = new Creature(
-                this.x + (Math.random() - 0.5) * 20,
-                this.y + (Math.random() - 0.5) * 20,
+                this.x + Math.cos(angle) * distance,
+                this.y + Math.sin(angle) * distance,
                 this.species,
                 childGenome,
                 Math.max(this.generation, mate.generation) + 1
@@ -287,9 +290,10 @@ export class Creature {
         return null;
     }
 
-    die() {
+    die(worldTime) {
         this.alive = false;
         this.state = 'dead';
+        this.deathTime = worldTime || 0; // Track when creature died (world time)
     }
 }
 
