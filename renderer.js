@@ -1,14 +1,28 @@
 // Rendering system for VIVARIUM
+import { SpriteAtlas, AnimationController } from './sprites.js';
 
-class Renderer {
+export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.selectedCreature = null;
+        this.spriteAtlas = null;
+        this.animController = new AnimationController();
+        this.ready = false;
+
+        // Load sprites
+        this.loadSprites();
 
         // Set canvas size
         this.resize();
         window.addEventListener('resize', () => this.resize());
+    }
+
+    async loadSprites() {
+        this.spriteAtlas = new SpriteAtlas();
+        await this.spriteAtlas.loadImages();
+        this.ready = true;
+        console.log('✓ Sprites loaded successfully');
     }
 
     resize() {
@@ -39,22 +53,33 @@ class Renderer {
     }
 
     drawFood(food) {
-        // Draw plants as small green circles with glow
-        this.ctx.shadowBlur = 10;
-        this.ctx.shadowColor = '#2ecc40';
-        this.ctx.fillStyle = '#2ecc40';
-        this.ctx.beginPath();
-        this.ctx.arc(food.x, food.y, 4, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.shadowBlur = 0;
+        if (!this.ready) {
+            // Fallback: Draw simple circle while sprites load
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = '#2ecc40';
+            this.ctx.fillStyle = '#2ecc40';
+            this.ctx.beginPath();
+            this.ctx.arc(food.x, food.y, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+            return;
+        }
 
-        // Add a small stem
-        this.ctx.strokeStyle = '#27ae60';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(food.x, food.y + 4);
-        this.ctx.lineTo(food.x, food.y + 8);
-        this.ctx.stroke();
+        // Determine food type and growth stage based on energy
+        const foodType = food.type || 'bush';
+        const growth = food.growth || Math.min(food.age / 150, 6); // 0-6 growth stages
+
+        const sprite = this.spriteAtlas.getFoodSprite(foodType, growth);
+        const scale = 0.3; // Scale down sprites
+
+        this.spriteAtlas.drawSprite(
+            this.ctx,
+            this.spriteAtlas.images.food,
+            sprite,
+            food.x,
+            food.y,
+            scale
+        );
     }
 
     drawCreature(creature) {
@@ -65,33 +90,65 @@ class Renderer {
         }
 
         const ctx = this.ctx;
-        const color = creature.species.color;
 
-        // Save context
+        // Register creature for animation
+        this.animController.registerEntity(creature.id, 6);
+
+        if (!this.ready) {
+            // Fallback: draw simple circles while sprites load
+            const color = creature.species.color;
+            ctx.save();
+            ctx.translate(creature.x, creature.y);
+            ctx.rotate(creature.direction);
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = color;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(0, 0, creature.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            this.drawEnergyBar(creature);
+            return;
+        }
+
+        // Determine which sprite to use based on species and state
+        const spriteType = creature.species.type;
+        const state = this.getCreatureSpriteState(creature);
+        const frame = this.animController.getFrame(creature.id);
+
+        let sprite;
+        let image;
+
+        switch (spriteType) {
+            case 'herbivore':
+                sprite = this.spriteAtlas.getHerbivoreSprite(state, frame);
+                image = this.spriteAtlas.images.herbivore;
+                break;
+            case 'carnivore':
+                sprite = this.spriteAtlas.getCarnivoreSprite(state, frame);
+                image = this.spriteAtlas.images.carnivore;
+                break;
+            case 'scavenger':
+                sprite = this.spriteAtlas.getScavengerSprite(state, frame);
+                image = this.spriteAtlas.images.scavenger;
+                break;
+            default:
+                return; // Unknown species
+        }
+
+        // Save context for rotation
         ctx.save();
         ctx.translate(creature.x, creature.y);
-        ctx.rotate(creature.direction);
 
-        // Glow effect based on energy
-        const energyPercent = creature.energy / creature.maxEnergy;
-        ctx.shadowBlur = 5 + energyPercent * 10;
-        ctx.shadowColor = color;
+        // Flip sprite based on direction
+        const facingLeft = creature.direction > Math.PI / 2 && creature.direction < 3 * Math.PI / 2;
+        if (facingLeft) {
+            ctx.scale(-1, 1);
+        }
 
-        // Draw body (simple circle for now - will be replaced with sprites)
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(0, 0, creature.size / 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw direction indicator
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-        ctx.beginPath();
-        ctx.arc(creature.size / 3, 0, creature.size / 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Draw state indicator
-        ctx.shadowBlur = 0;
-        this.drawStateIndicator(creature);
+        // Draw sprite
+        const scale = 0.4;
+        this.spriteAtlas.drawSprite(ctx, image, sprite, 0, 0, scale);
 
         ctx.restore();
 
@@ -107,6 +164,23 @@ class Renderer {
 
         // Draw energy bar
         this.drawEnergyBar(creature);
+    }
+
+    getCreatureSpriteState(creature) {
+        // Map creature state to sprite animation state
+        switch (creature.state) {
+            case 'seeking':
+            case 'idle':
+                return 'walk';
+            case 'eating':
+                return creature.species.type === 'scavenger' ? 'eating' : 'walk';
+            case 'fleeing':
+                return 'walk';
+            case 'hunting':
+                return creature.species.type === 'carnivore' ? 'attack' : 'walk';
+            default:
+                return 'walk';
+        }
     }
 
     drawStateIndicator(creature) {
@@ -218,6 +292,9 @@ class Renderer {
 
     render(world) {
         this.clear();
+
+        // Update animations
+        this.animController.update();
 
         // Draw food
         world.food.forEach(food => this.drawFood(food));

@@ -1,6 +1,6 @@
 // Genetics and Evolution System for VIVARIUM
 
-class Gene {
+export class Gene {
     constructor(value, mutationRate = 0.1, mutationAmount = 0.2) {
         this.value = value;
         this.mutationRate = mutationRate;
@@ -27,7 +27,7 @@ class Gene {
     }
 }
 
-class Genome {
+export class Genome {
     constructor(genes = {}) {
         this.genes = genes;
     }
@@ -93,7 +93,7 @@ class Genome {
 }
 
 // Standard genome templates for different species
-const GenomeTemplates = {
+export const GenomeTemplates = {
     herbivore: {
         speed: { min: 0.5, max: 2.5, mutationRate: 0.15, mutationAmount: 0.3 },
         size: { min: 8, max: 20, mutationRate: 0.1, mutationAmount: 0.2 },

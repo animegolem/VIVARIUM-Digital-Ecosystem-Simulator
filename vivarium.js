@@ -1,4 +1,7 @@
 // Main VIVARIUM simulation engine
+import { Genome, GenomeTemplates } from './genetics.js';
+import { Creature, Species, SPECIES, Food } from './creatures.js';
+import { Renderer } from './renderer.js';
 
 class World {
     constructor(width, height) {

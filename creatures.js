@@ -1,6 +1,7 @@
 // Creature definitions and behaviors for VIVARIUM
+import { Genome } from './genetics.js';
 
-class Creature {
+export class Creature {
     constructor(x, y, species, genome, generation = 1) {
         this.id = Math.random().toString(36).substr(2, 9);
         this.x = x;
@@ -260,7 +261,7 @@ class Creature {
 }
 
 // Species definitions
-class Species {
+export class Species {
     constructor(name, type, color, description) {
         this.name = name;
         this.type = type; // herbivore, carnivore, scavenger
@@ -269,7 +270,7 @@ class Species {
     }
 }
 
-const SPECIES = {
+export const SPECIES = {
     HERBIVORE: new Species(
         'Herbivore',
         'herbivore',
@@ -291,7 +292,7 @@ const SPECIES = {
 };
 
 // Food sources
-class Food {
+export class Food {
     constructor(x, y, energy = 30) {
         this.x = x;
         this.y = y;
