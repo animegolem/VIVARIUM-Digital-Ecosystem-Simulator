@@ -65,7 +65,48 @@ Each creature has an AI that determines its actions:
 
 ## Getting Started
 
-Simply open `index.html` in a modern web browser. No build process required!
+### 🖥️ Desktop App (Recommended)
+
+VIVARIUM is packaged as an Electron desktop app for easy standalone use:
+
+```bash
+# Install dependencies
+npm install
+
+# Run in development mode
+npm start
+
+# Build standalone app for your platform
+./build.sh
+
+# Build for specific platforms
+./build.sh linux    # AppImage + deb
+./build.sh win      # Windows installer + portable
+./build.sh mac      # macOS dmg + zip
+./build.sh all      # All platforms
+```
+
+After building, find your executable in the `dist/` directory!
+
+### 🌐 Web Version (Alternative)
+
+You can also run VIVARIUM in a web browser, but it requires a web server:
+
+**Option 1: Python**
+```bash
+python3 -m http.server 8080
+# Open http://localhost:8080
+```
+
+**Option 2: Node.js**
+```bash
+npx http-server -p 8080
+# Open http://localhost:8080
+```
+
+**Option 3: VS Code Live Server**
+- Install "Live Server" extension
+- Right-click `index.html` → "Open with Live Server"
 
 ## Controls
 
