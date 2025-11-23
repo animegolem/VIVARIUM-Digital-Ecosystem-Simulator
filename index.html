@@ -72,10 +72,29 @@
                         Click on creatures to see their stats!
                     </div>
                 </div>
+
+                <div class="panel-section">
+                    <h3>📝 Event Log</h3>
+                    <div class="controls">
+                        <button id="toggle-log-btn" class="btn btn-small">⏸ Pause Log</button>
+                        <button id="clear-log-btn" class="btn btn-small">🗑 Clear</button>
+                        <button id="export-log-btn" class="btn btn-small">💾 Export</button>
+                    </div>
+                    <div class="log-filters">
+                        <label><input type="checkbox" class="log-filter" value="creature" checked> Creatures</label>
+                        <label><input type="checkbox" class="log-filter" value="food" checked> Food</label>
+                        <label><input type="checkbox" class="log-filter" value="corpse" checked> Corpses</label>
+                        <label><input type="checkbox" class="log-filter" value="energy" checked> Energy</label>
+                        <label><input type="checkbox" class="log-filter" value="reproduction" checked> Reproduction</label>
+                        <label><input type="checkbox" class="log-filter" value="error" checked> Errors</label>
+                    </div>
+                    <div id="event-log" class="event-log"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <script src="event-log.js"></script>
     <script type="module" src="vivarium.js"></script>
 </body>
 </html>

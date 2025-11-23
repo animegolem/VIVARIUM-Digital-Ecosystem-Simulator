@@ -32,13 +32,15 @@ export class Creature {
     update(world) {
         if (!this.alive) return;
 
+        const oldState = this.state;
         this.age++;
         this.energy -= this.metabolism;
         this.timeSinceReproduction++;
 
         // Die from old age or starvation
         if (this.age > this.maxLifespan || this.energy <= 0) {
-            this.die(world.time);
+            const cause = this.age > this.maxLifespan ? 'old age' : 'starvation';
+            this.die(world.time, cause);
             return;
         }
 
@@ -49,6 +51,18 @@ export class Creature {
             this.carnivoreAI(world);
         } else if (this.species.type === 'scavenger') {
             this.scavengerAI(world);
+        }
+
+        // Log state changes
+        if (oldState !== this.state && window.eventLog) {
+            window.eventLog.log('creature', `${this.species.name} ${oldState} → ${this.state}`, {
+                frame: world.time,
+                species: this.species.name,
+                oldState,
+                newState: this.state,
+                energy: Math.round(this.energy),
+                id: this.id
+            });
         }
 
         // Move
@@ -218,6 +232,16 @@ export class Creature {
         this.energy = Math.min(this.energy + energyGain, this.maxEnergy);
         this.state = 'eating';
 
+        if (window.eventLog) {
+            window.eventLog.log('food', `${this.species.name} ate ${food.type || 'food'}`, {
+                frame: world.time,
+                species: this.species.name,
+                energyGain,
+                foodType: food.type,
+                id: this.id
+            });
+        }
+
         // Remove food from world
         const foodIndex = world.food.indexOf(food);
         if (foodIndex > -1) {
@@ -230,6 +254,18 @@ export class Creature {
         const energyGain = 40;
         this.energy = Math.min(this.energy + energyGain, this.maxEnergy);
         this.state = 'eating';
+
+        if (window.eventLog) {
+            window.eventLog.log('corpse', `${this.species.name} scavenged ${corpse.species.name} corpse`, {
+                frame: window.world?.time || 0,
+                scavenger: this.species.name,
+                corpseSpecies: corpse.species.name,
+                energyGain,
+                id: this.id,
+                corpseId: corpse.id
+            });
+        }
+
         // Note: corpse remains in world to be cleaned up by the decay system
     }
 
@@ -237,10 +273,32 @@ export class Creature {
         const attackPower = this.genome.get('attackPower') || 20;
         prey.energy -= attackPower;
 
+        if (window.eventLog) {
+            window.eventLog.log('creature', `${this.species.name} attacked ${prey.species.name}`, {
+                frame: world.time,
+                attacker: this.species.name,
+                prey: prey.species.name,
+                damage: attackPower,
+                preyEnergy: Math.round(prey.energy),
+                id: this.id,
+                preyId: prey.id
+            });
+        }
+
         if (prey.energy <= 0) {
-            prey.die(world.time);
+            prey.die(world.time, 'predation');
             // Gain energy from kill
             this.energy = Math.min(this.energy + 50, this.maxEnergy);
+
+            if (window.eventLog) {
+                window.eventLog.log('energy', `${this.species.name} gained 50 energy from kill`, {
+                    frame: world.time,
+                    species: this.species.name,
+                    energyGain: 50,
+                    newEnergy: Math.round(this.energy),
+                    id: this.id
+                });
+            }
         }
     }
 
@@ -284,16 +342,38 @@ export class Creature {
             this.timeSinceReproduction = 0;
             mate.timeSinceReproduction = 0;
 
+            if (window.eventLog) {
+                window.eventLog.log('reproduction', `${this.species.name} reproduced (Gen ${child.generation})`, {
+                    frame: world.time,
+                    species: this.species.name,
+                    generation: child.generation,
+                    parent1: this.id,
+                    parent2: mate.id,
+                    childId: child.id
+                });
+            }
+
             return child;
         }
 
         return null;
     }
 
-    die(worldTime) {
+    die(worldTime, cause = 'unknown') {
         this.alive = false;
         this.state = 'dead';
         this.deathTime = worldTime || 0; // Track when creature died (world time)
+
+        if (window.eventLog) {
+            window.eventLog.log('creature', `${this.species.name} died from ${cause}`, {
+                frame: worldTime,
+                species: this.species.name,
+                cause,
+                age: this.age,
+                generation: this.generation,
+                id: this.id
+            });
+        }
     }
 }
 

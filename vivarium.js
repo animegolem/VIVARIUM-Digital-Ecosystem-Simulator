@@ -96,7 +96,16 @@ class World {
 
         // Randomly spawn new food (2% chance per frame)
         if (Math.random() < 0.02 && this.food.length < 100) {
+            const beforeCount = this.food.length;
             this.spawnFood(1);
+            if (window.eventLog && this.food.length > beforeCount) {
+                const newFood = this.food[this.food.length - 1];
+                window.eventLog.log('food', `New ${newFood.type || 'food'} spawned`, {
+                    frame: this.time,
+                    foodType: newFood.type,
+                    position: { x: Math.round(newFood.x), y: Math.round(newFood.y) }
+                });
+            }
         }
 
         // Remove corpses after some time (300 frames for scavengers to find them)
@@ -105,6 +114,15 @@ class World {
                 const timeSinceDeath = this.time - c.deathTime;
                 if (timeSinceDeath > 300) {
                     this.stats.totalDeaths++;
+                    if (window.eventLog) {
+                        window.eventLog.log('corpse', `${c.species.name} corpse decayed`, {
+                            frame: this.time,
+                            species: c.species.name,
+                            age: c.age,
+                            timeSinceDeath,
+                            id: c.id
+                        });
+                    }
                     return false; // Remove corpse
                 }
             }
@@ -194,6 +212,10 @@ class Vivarium {
         document.getElementById('reset-btn').addEventListener('click', () => {
             if (confirm('Are you sure you want to reset the ecosystem?')) {
                 this.world.reset();
+                if (window.eventLog) {
+                    window.eventLog.clear();
+                    window.eventLog.log('system', 'World reset', { frame: this.world.time });
+                }
             }
         });
 
@@ -207,6 +229,9 @@ class Vivarium {
         // Add food button
         document.getElementById('add-food-btn').addEventListener('click', () => {
             this.world.spawnFood(10);
+            if (window.eventLog) {
+                window.eventLog.log('food', 'Manually spawned 10 food items', { frame: this.world.time });
+            }
         });
 
         // Add creature button
@@ -215,6 +240,12 @@ class Vivarium {
             const species = [SPECIES.HERBIVORE, SPECIES.CARNIVORE, SPECIES.SCAVENGER];
             const randomSpecies = species[Math.floor(Math.random() * species.length)];
             this.world.addCreature(randomSpecies);
+            if (window.eventLog) {
+                window.eventLog.log('creature', `Manually added ${randomSpecies.name}`, {
+                    frame: this.world.time,
+                    species: randomSpecies.name
+                });
+            }
         });
 
         // Canvas click for creature selection
@@ -222,6 +253,35 @@ class Vivarium {
             const creature = this.renderer.getCreatureAtPosition(e.clientX, e.clientY, this.world.creatures);
             this.renderer.setSelectedCreature(creature);
             this.updateInfoPanel(creature);
+        });
+
+        // Event log controls
+        document.getElementById('toggle-log-btn').addEventListener('click', () => {
+            const enabled = window.eventLog.toggle();
+            document.getElementById('toggle-log-btn').textContent = enabled ? '⏸ Pause Log' : '▶ Resume Log';
+        });
+
+        document.getElementById('clear-log-btn').addEventListener('click', () => {
+            window.eventLog.clear();
+            this.updateEventLog();
+        });
+
+        document.getElementById('export-log-btn').addEventListener('click', () => {
+            const logData = window.eventLog.export();
+            const blob = new Blob([logData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vivarium-log-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Event log filters
+        document.querySelectorAll('.log-filter').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.updateEventLog();
+            });
         });
 
         // Window resize
@@ -319,8 +379,37 @@ class Vivarium {
         `;
     }
 
+    updateEventLog() {
+        if (!window.eventLog) return;
+
+        const logContainer = document.getElementById('event-log');
+
+        // Get active filters
+        const activeFilters = Array.from(document.querySelectorAll('.log-filter:checked'))
+            .map(cb => cb.value);
+
+        // Get recent events
+        const events = window.eventLog.getRecent(100, activeFilters);
+
+        // Display events (most recent at bottom)
+        logContainer.innerHTML = events.map(event => {
+            const time = new Date(event.timestamp).toLocaleTimeString();
+            return `<div class="event-entry ${event.type}">
+                <span class="event-time">${time}</span>
+                <span class="event-frame">F${event.frame}</span>
+                ${event.message}
+            </div>`;
+        }).join('');
+
+        // Auto-scroll to bottom
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
     start() {
         this.updateSpeciesGuide();
+        if (window.eventLog) {
+            window.eventLog.log('system', 'Vivarium initialized', { frame: this.world.time });
+        }
         this.loop();
     }
 
@@ -328,6 +417,7 @@ class Vivarium {
         this.world.update();
         this.renderer.render(this.world);
         this.updateUI();
+        this.updateEventLog();
 
         requestAnimationFrame(() => this.loop());
     }
