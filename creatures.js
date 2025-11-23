@@ -329,13 +329,19 @@ export class Food {
     constructor(x, y, energy = 30, type = null) {
         this.x = x;
         this.y = y;
-        this.energy = energy;
         this.alive = true;
         this.age = 0;
 
-        // Food types: bush, mushroom, crystal
-        const foodTypes = ['bush', 'mushroom', 'crystal'];
+        // Food types: grass, mushroom, crystal
+        const foodTypes = ['grass', 'mushroom', 'crystal'];
         this.type = type || foodTypes[Math.floor(Math.random() * foodTypes.length)];
+
+        // Set energy based on type
+        if (!energy || energy === 30) {
+            this.energy = this.type === 'grass' ? 25 : this.type === 'mushroom' ? 30 : 40;
+        } else {
+            this.energy = energy;
+        }
 
         // Growth stage (0-6)
         this.growth = 0;

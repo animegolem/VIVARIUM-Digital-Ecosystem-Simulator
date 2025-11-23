@@ -206,6 +206,32 @@ export class SpriteAtlas {
             this.loadingPromises.push(promise);
         }
 
+        // Load individual mushroom sprites for food
+        this.images.mushroom = [];
+        for (let i = 1; i <= 7; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load shrooms${i}.png`));
+            });
+            img.src = `images/food/shrooms${i}.png`;
+            this.images.mushroom[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load individual crystal sprites for food
+        this.images.crystal = [];
+        for (let i = 1; i <= 7; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load crystal${i}.png`));
+            });
+            img.src = `images/food/crystal${i}.png`;
+            this.images.crystal[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
         await Promise.all(this.loadingPromises);
         this.loaded = true;
         return this;

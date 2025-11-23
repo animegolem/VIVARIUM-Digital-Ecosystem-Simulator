@@ -55,9 +55,15 @@ export class Renderer {
     drawFood(food) {
         if (!this.ready) {
             // Fallback: Draw simple circle while sprites load
+            const colorMap = {
+                grass: '#2ecc40',
+                mushroom: '#a020f0',
+                crystal: '#00d4ff'
+            };
+            const color = colorMap[food.type] || '#2ecc40';
             this.ctx.shadowBlur = 10;
-            this.ctx.shadowColor = '#2ecc40';
-            this.ctx.fillStyle = '#2ecc40';
+            this.ctx.shadowColor = color;
+            this.ctx.fillStyle = color;
             this.ctx.beginPath();
             this.ctx.arc(food.x, food.y, 4, 0, Math.PI * 2);
             this.ctx.fill();
@@ -65,20 +71,20 @@ export class Renderer {
             return;
         }
 
-        // Use individual grass sprites
-        const grassSprites = this.spriteAtlas.images.grass;
-        if (grassSprites && grassSprites.length > 0) {
-            // Pick a grass sprite based on growth stage (0-6)
+        // Use individual food sprites based on type
+        const foodSprites = this.spriteAtlas.images[food.type];
+        if (foodSprites && foodSprites.length > 0) {
+            // Pick a sprite based on growth stage (0-6)
             const growth = Math.floor(food.growth || 0);
-            const spriteIndex = Math.min(growth, grassSprites.length - 1);
-            const grassImage = grassSprites[spriteIndex];
+            const spriteIndex = Math.min(growth, foodSprites.length - 1);
+            const foodImage = foodSprites[spriteIndex];
 
-            if (grassImage && grassImage.complete) {
+            if (foodImage && foodImage.complete) {
                 const scale = 0.3;
-                const width = grassImage.width * scale;
-                const height = grassImage.height * scale;
+                const width = foodImage.width * scale;
+                const height = foodImage.height * scale;
                 this.ctx.drawImage(
-                    grassImage,
+                    foodImage,
                     food.x - width / 2,
                     food.y - height / 2,
                     width,
