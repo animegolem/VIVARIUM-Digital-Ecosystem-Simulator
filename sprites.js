@@ -8,6 +8,19 @@ export class SpriteAtlas {
         this.loadingPromises = [];
     }
 
+    createImage(src, errorMessage) {
+        const img = new Image();
+        img.draggable = false;
+        img.ondragstart = (e) => { e.preventDefault(); return false; };
+        const promise = new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error(errorMessage));
+        });
+        img.src = src;
+        this.loadingPromises.push(promise);
+        return img;
+    }
+
     async loadImages() {
         const imageFiles = {
             food: 'images/foods.jpg'
@@ -15,14 +28,7 @@ export class SpriteAtlas {
 
         // Load sprite sheets for food only
         for (const [key, path] of Object.entries(imageFiles)) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load ${path}`));
-            });
-            img.src = path;
-            this.images[key] = img;
-            this.loadingPromises.push(promise);
+            this.images[key] = this.createImage(path, `Failed to load ${path}`);
         }
 
         // Load individual herbivore sprites
@@ -35,50 +41,34 @@ export class SpriteAtlas {
 
         // Load walk animations (6 frames)
         for (let i = 1; i <= 6; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load grass-eater-walk-${i}.png`));
-            });
-            img.src = `images/grasseater/grass-eater-walk-${i}.png`;
-            this.images.herbivore.walk[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.herbivore.walk[i - 1] = this.createImage(
+                `images/grasseater/grass-eater-walk-${i}.png`,
+                `Failed to load grass-eater-walk-${i}.png`
+            );
         }
 
         // Load eating animations (2 frames)
         for (let i = 1; i <= 2; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load grass-eater-eating-${i}.png`));
-            });
-            img.src = `images/grasseater/grass-eater-eating-${i}.png`;
-            this.images.herbivore.eating[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.herbivore.eating[i - 1] = this.createImage(
+                `images/grasseater/grass-eater-eating-${i}.png`,
+                `Failed to load grass-eater-eating-${i}.png`
+            );
         }
 
         // Load heart/mating animations (4 frames)
         for (let i = 1; i <= 4; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load grass-eater-heart-${i}.png`));
-            });
-            img.src = `images/grasseater/grass-eater-heart-${i}.png`;
-            this.images.herbivore.heart[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.herbivore.heart[i - 1] = this.createImage(
+                `images/grasseater/grass-eater-heart-${i}.png`,
+                `Failed to load grass-eater-heart-${i}.png`
+            );
         }
 
         // Load dead animations (6 frames)
         for (let i = 1; i <= 6; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load grass-eater-ded-${i}.png`));
-            });
-            img.src = `images/grasseater/grass-eater-ded-${i}.png`;
-            this.images.herbivore.dead[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.herbivore.dead[i - 1] = this.createImage(
+                `images/grasseater/grass-eater-ded-${i}.png`,
+                `Failed to load grass-eater-ded-${i}.png`
+            );
         }
 
         // Load individual carnivore sprites
@@ -91,50 +81,34 @@ export class SpriteAtlas {
 
         // Load walk animations (5 frames)
         for (let i = 1; i <= 5; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load meat-eater-walk-${i}.png`));
-            });
-            img.src = `images/meat-eats/meat-eater-walk-${i}.png`;
-            this.images.carnivore.walk[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.carnivore.walk[i - 1] = this.createImage(
+                `images/meat-eats/meat-eater-walk-${i}.png`,
+                `Failed to load meat-eater-walk-${i}.png`
+            );
         }
 
         // Load eating animations (3 frames)
         for (let i = 1; i <= 3; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load meat-eater-eating-${i}.png`));
-            });
-            img.src = `images/meat-eats/meat-eater-eating-${i}.png`;
-            this.images.carnivore.eating[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.carnivore.eating[i - 1] = this.createImage(
+                `images/meat-eats/meat-eater-eating-${i}.png`,
+                `Failed to load meat-eater-eating-${i}.png`
+            );
         }
 
         // Load pounce/attack animations (4 frames)
         for (let i = 1; i <= 4; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load meat-eater-pounce-${i}.png`));
-            });
-            img.src = `images/meat-eats/meat-eater-pounce-${i}.png`;
-            this.images.carnivore.pounce[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.carnivore.pounce[i - 1] = this.createImage(
+                `images/meat-eats/meat-eater-pounce-${i}.png`,
+                `Failed to load meat-eater-pounce-${i}.png`
+            );
         }
 
         // Load dead animations (3 frames)
         for (let i = 1; i <= 3; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load meat-eater-ded-${i}.png`));
-            });
-            img.src = `images/meat-eats/meat-eater-ded-${i}.png`;
-            this.images.carnivore.dead[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.carnivore.dead[i - 1] = this.createImage(
+                `images/meat-eats/meat-eater-ded-${i}.png`,
+                `Failed to load meat-eater-ded-${i}.png`
+            );
         }
 
         // Load individual scavenger sprites
@@ -147,89 +121,61 @@ export class SpriteAtlas {
 
         // Load walk animations (6 frames)
         for (let i = 1; i <= 6; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load scavy-walks-${i}.png`));
-            });
-            img.src = `images/scavy/scavy-walks-${i}.png`;
-            this.images.scavenger.walk[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.scavenger.walk[i - 1] = this.createImage(
+                `images/scavy/scavy-walks-${i}.png`,
+                `Failed to load scavy-walks-${i}.png`
+            );
         }
 
         // Load scavenge animations (4 frames)
         for (let i = 1; i <= 4; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load scavy-scaving-${i}.png`));
-            });
-            img.src = `images/scavy/scavy-scaving-${i}.png`;
-            this.images.scavenger.scavenge[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.scavenger.scavenge[i - 1] = this.createImage(
+                `images/scavy/scavy-scaving-${i}.png`,
+                `Failed to load scavy-scaving-${i}.png`
+            );
         }
 
         // Load eating animations (3 frames)
         for (let i = 1; i <= 3; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load scavy-eating-${i}.png`));
-            });
-            img.src = `images/scavy/scavy-eating-${i}.png`;
-            this.images.scavenger.eating[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.scavenger.eating[i - 1] = this.createImage(
+                `images/scavy/scavy-eating-${i}.png`,
+                `Failed to load scavy-eating-${i}.png`
+            );
         }
 
         // Load dead animations (3 frames)
         for (let i = 1; i <= 3; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load scavy-ded-${i}.png`));
-            });
-            img.src = `images/scavy/scavy-ded-${i}.png`;
-            this.images.scavenger.dead[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.scavenger.dead[i - 1] = this.createImage(
+                `images/scavy/scavy-ded-${i}.png`,
+                `Failed to load scavy-ded-${i}.png`
+            );
         }
 
         // Load individual grass sprites for food
         this.images.grass = [];
         for (let i = 1; i <= 7; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load grass${i}.png`));
-            });
-            img.src = `images/food/grass${i}.png`;
-            this.images.grass[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.grass[i - 1] = this.createImage(
+                `images/food/grass${i}.png`,
+                `Failed to load grass${i}.png`
+            );
         }
 
         // Load individual mushroom sprites for food
         this.images.mushroom = [];
         for (let i = 1; i <= 7; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load shrooms${i}.png`));
-            });
-            img.src = `images/food/shrooms${i}.png`;
-            this.images.mushroom[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.mushroom[i - 1] = this.createImage(
+                `images/food/shrooms${i}.png`,
+                `Failed to load shrooms${i}.png`
+            );
         }
 
         // Load individual crystal sprites for food
         this.images.crystal = [];
         for (let i = 1; i <= 7; i++) {
-            const img = new Image();
-            const promise = new Promise((resolve, reject) => {
-                img.onload = () => resolve();
-                img.onerror = () => reject(new Error(`Failed to load crystal${i}.png`));
-            });
-            img.src = `images/food/crystal${i}.png`;
-            this.images.crystal[i - 1] = img;
-            this.loadingPromises.push(promise);
+            this.images.crystal[i - 1] = this.createImage(
+                `images/food/crystal${i}.png`,
+                `Failed to load crystal${i}.png`
+            );
         }
 
         await Promise.all(this.loadingPromises);

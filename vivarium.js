@@ -175,6 +175,16 @@ class Vivarium {
     }
 
     setupEventListeners() {
+        // Prevent drag events on canvas
+        this.canvas.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        this.canvas.addEventListener('drag', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
         // Pause button
         document.getElementById('pause-btn').addEventListener('click', () => {
             this.togglePause();
