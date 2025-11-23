@@ -16,6 +16,7 @@ export class SpriteAtlas {
             food: 'images/foods.jpg'
         };
 
+        // Load main sprite sheets
         for (const [key, path] of Object.entries(imageFiles)) {
             const img = new Image();
             const promise = new Promise((resolve, reject) => {
@@ -24,6 +25,19 @@ export class SpriteAtlas {
             });
             img.src = path;
             this.images[key] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load individual grass sprites for food
+        this.images.grass = [];
+        for (let i = 1; i <= 7; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load grass${i}.png`));
+            });
+            img.src = `images/food/grass${i}.png`;
+            this.images.grass[i - 1] = img;
             this.loadingPromises.push(promise);
         }
 

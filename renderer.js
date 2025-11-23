@@ -65,21 +65,24 @@ export class Renderer {
             return;
         }
 
-        // Determine food type and growth stage
-        const foodType = food.type || 'bush';
-        const growth = food.growth || 0;
+        // Use grass sprites based on growth stage (0-6)
+        const growth = Math.floor(food.growth || 0);
+        const grassIndex = Math.min(growth, 6);
+        const grassImage = this.spriteAtlas.images.grass[grassIndex];
 
-        const sprite = this.spriteAtlas.getFoodSprite(foodType, growth);
-        const scale = 0.5; // Increased from 0.3 for better visibility and consistency
+        if (grassImage && grassImage.complete) {
+            const scale = 0.5;
+            const width = grassImage.width * scale;
+            const height = grassImage.height * scale;
 
-        this.spriteAtlas.drawSprite(
-            this.ctx,
-            this.spriteAtlas.images.food,
-            sprite,
-            food.x,
-            food.y,
-            scale
-        );
+            this.ctx.drawImage(
+                grassImage,
+                food.x - width / 2,
+                food.y - height / 2,
+                width,
+                height
+            );
+        }
     }
 
     drawCreature(creature) {
