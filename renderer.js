@@ -65,23 +65,14 @@ export class Renderer {
             return;
         }
 
-        // Use grass sprites based on growth stage (0-6)
+        // Use type-specific sprites (bush, mushroom, crystal) based on growth stage
         const growth = Math.floor(food.growth || 0);
-        const grassIndex = Math.min(growth, 6);
-        const grassImage = this.spriteAtlas.images.grass[grassIndex];
+        const sprite = this.spriteAtlas.getFoodSprite(food.type, growth);
+        const image = this.spriteAtlas.images.food;
 
-        if (grassImage && grassImage.complete) {
-            const scale = 0.5;
-            const width = grassImage.width * scale;
-            const height = grassImage.height * scale;
-
-            this.ctx.drawImage(
-                grassImage,
-                food.x - width / 2,
-                food.y - height / 2,
-                width,
-                height
-            );
+        if (image && image.complete && sprite) {
+            const scale = 0.3;
+            this.spriteAtlas.drawSprite(this.ctx, image, sprite, food.x, food.y, scale);
         }
     }
 

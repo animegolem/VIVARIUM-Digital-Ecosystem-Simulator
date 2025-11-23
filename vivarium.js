@@ -94,8 +94,8 @@ class World {
         // Remove dead food
         this.food = this.food.filter(f => f.alive);
 
-        // Randomly spawn new food
-        if (Math.random() < 0.1 && this.food.length < 100) {
+        // Randomly spawn new food (reduced rate: 1% chance instead of 10%)
+        if (Math.random() < 0.01 && this.food.length < 80) {
             this.spawnFood(1);
         }
 
