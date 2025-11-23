@@ -125,7 +125,6 @@ export class Renderer {
 
         // Determine which sprite to use based on species and state
         const spriteType = creature.species.type;
-        const state = this.getCreatureSpriteState(creature);
         const frame = this.animController.getFrame(creature.id);
 
         // Save context for rotation
