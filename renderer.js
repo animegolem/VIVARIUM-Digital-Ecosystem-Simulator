@@ -65,12 +65,12 @@ export class Renderer {
             return;
         }
 
-        // Determine food type and growth stage based on energy
+        // Determine food type and growth stage
         const foodType = food.type || 'bush';
-        const growth = food.growth || Math.min(food.age / 150, 6); // 0-6 growth stages
+        const growth = food.growth || 0;
 
         const sprite = this.spriteAtlas.getFoodSprite(foodType, growth);
-        const scale = 0.3; // Scale down sprites
+        const scale = 0.5; // Increased from 0.3 for better visibility and consistency
 
         this.spriteAtlas.drawSprite(
             this.ctx,

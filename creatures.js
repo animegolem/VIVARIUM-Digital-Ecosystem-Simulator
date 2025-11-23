@@ -293,16 +293,29 @@ export const SPECIES = {
 
 // Food sources
 export class Food {
-    constructor(x, y, energy = 30) {
+    constructor(x, y, energy = 30, type = null) {
         this.x = x;
         this.y = y;
         this.energy = energy;
         this.alive = true;
         this.age = 0;
+
+        // Food types: bush, mushroom, crystal
+        const foodTypes = ['bush', 'mushroom', 'crystal'];
+        this.type = type || foodTypes[Math.floor(Math.random() * foodTypes.length)];
+
+        // Growth stage (0-6)
+        this.growth = 0;
     }
 
     update() {
         this.age++;
+
+        // Grow over time up to max stage
+        if (this.growth < 6) {
+            this.growth = Math.min(this.age / 150, 6);
+        }
+
         // Food decays after a while
         if (this.age > 1000) {
             this.alive = false;
