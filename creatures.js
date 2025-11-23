@@ -121,14 +121,32 @@ export class Creature {
     scavengerAI(world) {
         // Look for corpses or plants
         const nearbyFood = this.findNearby(world.food, this.visionRange);
+        const nearbyCorpses = this.findNearbyCorpses(world.creatures, this.visionRange);
 
-        if (nearbyFood.length > 0 && this.energy < this.maxEnergy * 0.8) {
+        // Prefer corpses over plants (more energy)
+        let target = null;
+        let isCorpse = false;
+        if (nearbyCorpses.length > 0) {
+            target = nearbyCorpses[0];
+            isCorpse = true;
+        } else if (nearbyFood.length > 0) {
+            target = nearbyFood[0];
+            isCorpse = false;
+        }
+
+        if (target && this.energy < this.maxEnergy * 0.8) {
             this.state = 'seeking';
-            this.target = nearbyFood[0];
+            this.target = target;
             this.moveToward(this.target);
 
             if (this.distanceTo(this.target) < this.size) {
-                this.eat(world, this.target);
+                if (isCorpse) {
+                    // Eating a corpse
+                    this.eatCorpse(target);
+                } else {
+                    // Eating plants
+                    this.eat(world, this.target);
+                }
             }
         } else {
             this.state = 'idle';
@@ -150,6 +168,13 @@ export class Creature {
     findNearby(items, range) {
         return items
             .filter(item => item !== this && item.alive)
+            .filter(item => this.distanceTo(item) < range)
+            .sort((a, b) => this.distanceTo(a) - this.distanceTo(b));
+    }
+
+    findNearbyCorpses(items, range) {
+        return items
+            .filter(item => item !== this && !item.alive)
             .filter(item => this.distanceTo(item) < range)
             .sort((a, b) => this.distanceTo(a) - this.distanceTo(b));
     }
@@ -198,6 +223,14 @@ export class Creature {
         if (foodIndex > -1) {
             world.food.splice(foodIndex, 1);
         }
+    }
+
+    eatCorpse(corpse) {
+        // Gain more energy from corpses (40 energy)
+        const energyGain = 40;
+        this.energy = Math.min(this.energy + energyGain, this.maxEnergy);
+        this.state = 'eating';
+        // Note: corpse remains in world to be cleaned up by the decay system
     }
 
     attack(world, prey) {

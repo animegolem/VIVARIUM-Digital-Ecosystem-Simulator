@@ -98,20 +98,20 @@ export const GenomeTemplates = {
         speed: { min: 0.5, max: 2.5, mutationRate: 0.15, mutationAmount: 0.3 },
         size: { min: 8, max: 20, mutationRate: 0.1, mutationAmount: 0.2 },
         visionRange: { min: 50, max: 150, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.05, max: 0.3, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 80, max: 200, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 120, max: 180, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 300, max: 600, mutationRate: 0.1, mutationAmount: 0.2 }
+        metabolism: { min: 0.02, max: 0.15, mutationRate: 0.1, mutationAmount: 0.2 },
+        maxEnergy: { min: 100, max: 250, mutationRate: 0.1, mutationAmount: 0.2 },
+        reproductionThreshold: { min: 100, max: 150, mutationRate: 0.08, mutationAmount: 0.15 },
+        lifespan: { min: 1200, max: 2400, mutationRate: 0.1, mutationAmount: 0.2 }
     },
 
     carnivore: {
         speed: { min: 1.5, max: 4, mutationRate: 0.15, mutationAmount: 0.3 },
         size: { min: 10, max: 25, mutationRate: 0.1, mutationAmount: 0.2 },
         visionRange: { min: 80, max: 200, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.1, max: 0.4, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 100, max: 250, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 150, max: 220, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 250, max: 500, mutationRate: 0.1, mutationAmount: 0.2 },
+        metabolism: { min: 0.05, max: 0.2, mutationRate: 0.1, mutationAmount: 0.2 },
+        maxEnergy: { min: 120, max: 300, mutationRate: 0.1, mutationAmount: 0.2 },
+        reproductionThreshold: { min: 130, max: 200, mutationRate: 0.08, mutationAmount: 0.15 },
+        lifespan: { min: 1000, max: 2000, mutationRate: 0.1, mutationAmount: 0.2 },
         attackPower: { min: 15, max: 40, mutationRate: 0.15, mutationAmount: 0.3 }
     },
 
@@ -119,9 +119,9 @@ export const GenomeTemplates = {
         speed: { min: 1, max: 3, mutationRate: 0.15, mutationAmount: 0.3 },
         size: { min: 6, max: 15, mutationRate: 0.1, mutationAmount: 0.2 },
         visionRange: { min: 60, max: 180, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.03, max: 0.2, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 90, max: 180, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 100, max: 160, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 350, max: 700, mutationRate: 0.1, mutationAmount: 0.2 }
+        metabolism: { min: 0.015, max: 0.12, mutationRate: 0.1, mutationAmount: 0.2 },
+        maxEnergy: { min: 100, max: 220, mutationRate: 0.1, mutationAmount: 0.2 },
+        reproductionThreshold: { min: 90, max: 140, mutationRate: 0.08, mutationAmount: 0.15 },
+        lifespan: { min: 1400, max: 2800, mutationRate: 0.1, mutationAmount: 0.2 }
     }
 };

@@ -65,35 +65,45 @@ export class Renderer {
             return;
         }
 
-        // Use type-specific sprites (bush, mushroom, crystal) based on growth stage
-        const growth = Math.floor(food.growth || 0);
-        const sprite = this.spriteAtlas.getFoodSprite(food.type, growth);
-        const image = this.spriteAtlas.images.food;
+        // Use individual grass sprites
+        const grassSprites = this.spriteAtlas.images.grass;
+        if (grassSprites && grassSprites.length > 0) {
+            // Pick a grass sprite based on growth stage (0-6)
+            const growth = Math.floor(food.growth || 0);
+            const spriteIndex = Math.min(growth, grassSprites.length - 1);
+            const grassImage = grassSprites[spriteIndex];
 
-        if (image && image.complete && sprite) {
-            const scale = 0.3;
-            this.spriteAtlas.drawSprite(this.ctx, image, sprite, food.x, food.y, scale);
+            if (grassImage && grassImage.complete) {
+                const scale = 0.3;
+                const width = grassImage.width * scale;
+                const height = grassImage.height * scale;
+                this.ctx.drawImage(
+                    grassImage,
+                    food.x - width / 2,
+                    food.y - height / 2,
+                    width,
+                    height
+                );
+            }
         }
     }
 
     drawCreature(creature) {
-        if (!creature.alive) {
-            // Draw corpse
-            this.drawCorpse(creature);
-            return;
-        }
-
         const ctx = this.ctx;
 
-        // Register creature for animation
-        this.animController.registerEntity(creature.id, 6);
+        // Determine max frames based on species and state
+        const state = this.getCreatureSpriteState(creature);
+        const maxFrames = this.getMaxFramesForState(creature.species.type, state);
+        this.animController.registerEntity(creature.id, maxFrames);
 
         if (!this.ready) {
             // Fallback: draw simple circles while sprites load
-            const color = creature.species.color;
+            const color = creature.alive ? creature.species.color : 'rgba(100, 100, 100, 0.3)';
             ctx.save();
             ctx.translate(creature.x, creature.y);
-            ctx.rotate(creature.direction);
+            if (creature.alive) {
+                ctx.rotate(creature.direction);
+            }
             ctx.shadowBlur = 5;
             ctx.shadowColor = color;
             ctx.fillStyle = color;
@@ -101,7 +111,9 @@ export class Renderer {
             ctx.arc(0, 0, creature.size / 2, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
-            this.drawEnergyBar(creature);
+            if (creature.alive) {
+                this.drawEnergyBar(creature);
+            }
             return;
         }
 
@@ -114,10 +126,12 @@ export class Renderer {
         ctx.save();
         ctx.translate(creature.x, creature.y);
 
-        // Flip sprite based on direction
-        const facingLeft = creature.direction > Math.PI / 2 && creature.direction < 3 * Math.PI / 2;
-        if (facingLeft) {
-            ctx.scale(-1, 1);
+        // Flip sprite based on direction (only for living creatures)
+        if (creature.alive) {
+            const facingLeft = creature.direction > Math.PI / 2 && creature.direction < 3 * Math.PI / 2;
+            if (facingLeft) {
+                ctx.scale(-1, 1);
+            }
         }
 
         // Draw sprite based on type
@@ -137,7 +151,12 @@ export class Renderer {
             if (spriteImage && spriteImage.complete) {
                 const width = spriteImage.width * scale;
                 const height = spriteImage.height * scale;
+                // Add slight transparency to dead creatures
+                if (!creature.alive) {
+                    ctx.globalAlpha = 0.7;
+                }
                 ctx.drawImage(spriteImage, -width / 2, -height / 2, width, height);
+                ctx.globalAlpha = 1.0;
             }
         } else {
             ctx.restore();
@@ -152,12 +171,14 @@ export class Renderer {
         }
 
         // Draw vision range if selected
-        if (this.selectedCreature === creature) {
+        if (this.selectedCreature === creature && creature.alive) {
             this.drawVisionRange(creature);
         }
 
-        // Draw energy bar
-        this.drawEnergyBar(creature);
+        // Draw energy bar for living creatures
+        if (creature.alive) {
+            this.drawEnergyBar(creature);
+        }
     }
 
     getCreatureSpriteState(creature) {
@@ -180,6 +201,32 @@ export class Renderer {
             default:
                 return 'walk';
         }
+    }
+
+    getMaxFramesForState(speciesType, state) {
+        // Return the correct number of frames for each species/state combination
+        const frameCounts = {
+            herbivore: {
+                walk: 6,
+                eating: 2,
+                mating: 4,
+                dead: 6
+            },
+            carnivore: {
+                walk: 5,
+                eating: 3,
+                hunting: 4,
+                dead: 3
+            },
+            scavenger: {
+                walk: 6,
+                eating: 3,
+                scavenging: 4,
+                dead: 3
+            }
+        };
+
+        return frameCounts[speciesType]?.[state] || 6;
     }
 
     drawStateIndicator(creature) {

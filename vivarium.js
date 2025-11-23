@@ -94,15 +94,15 @@ class World {
         // Remove dead food
         this.food = this.food.filter(f => f.alive);
 
-        // Randomly spawn new food (reduced rate: 1% chance instead of 10%)
-        if (Math.random() < 0.01 && this.food.length < 80) {
+        // Randomly spawn new food (2% chance per frame)
+        if (Math.random() < 0.02 && this.food.length < 100) {
             this.spawnFood(1);
         }
 
-        // Remove corpses after some time
+        // Remove corpses after some time (increased to 300 frames for scavengers)
         const deadCreatures = this.creatures.filter(c => !c.alive);
         deadCreatures.forEach(c => {
-            if (this.time - c.age > 100) {
+            if (this.time - c.age > 300) {
                 const index = this.creatures.indexOf(c);
                 if (index > -1) {
                     this.creatures.splice(index, 1);

@@ -358,6 +358,14 @@ export class AnimationController {
                 frame: Math.floor(Math.random() * maxFrames), // Start at random frame
                 maxFrames: maxFrames
             });
+        } else {
+            // Update maxFrames if it changed (e.g., creature changed state)
+            const anim = this.animations.get(id);
+            if (anim.maxFrames !== maxFrames) {
+                anim.maxFrames = maxFrames;
+                // Clamp current frame to valid range
+                anim.frame = anim.frame % maxFrames;
+            }
         }
     }
 
