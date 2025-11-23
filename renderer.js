@@ -110,26 +110,6 @@ export class Renderer {
         const state = this.getCreatureSpriteState(creature);
         const frame = this.animController.getFrame(creature.id);
 
-        let sprite;
-        let image;
-
-        switch (spriteType) {
-            case 'herbivore':
-                sprite = this.spriteAtlas.getHerbivoreSprite(state, frame);
-                image = this.spriteAtlas.images.herbivore;
-                break;
-            case 'carnivore':
-                sprite = this.spriteAtlas.getCarnivoreSprite(state, frame);
-                image = this.spriteAtlas.images.carnivore;
-                break;
-            case 'scavenger':
-                sprite = this.spriteAtlas.getScavengerSprite(state, frame);
-                image = this.spriteAtlas.images.scavenger;
-                break;
-            default:
-                return; // Unknown species
-        }
-
         // Save context for rotation
         ctx.save();
         ctx.translate(creature.x, creature.y);
@@ -140,9 +120,37 @@ export class Renderer {
             ctx.scale(-1, 1);
         }
 
-        // Draw sprite
+        // Draw sprite based on type
         const scale = 0.4;
-        this.spriteAtlas.drawSprite(ctx, image, sprite, 0, 0, scale);
+
+        if (spriteType === 'herbivore') {
+            // Herbivores use individual PNG files
+            const spriteImage = this.spriteAtlas.getHerbivoreSprite(state, frame);
+            if (spriteImage && spriteImage.complete) {
+                const width = spriteImage.width * scale;
+                const height = spriteImage.height * scale;
+                ctx.drawImage(spriteImage, -width / 2, -height / 2, width, height);
+            }
+        } else {
+            // Carnivores and scavengers use sprite atlas
+            let sprite, image;
+
+            switch (spriteType) {
+                case 'carnivore':
+                    sprite = this.spriteAtlas.getCarnivoreSprite(state, frame);
+                    image = this.spriteAtlas.images.carnivore;
+                    break;
+                case 'scavenger':
+                    sprite = this.spriteAtlas.getScavengerSprite(state, frame);
+                    image = this.spriteAtlas.images.scavenger;
+                    break;
+                default:
+                    ctx.restore();
+                    return; // Unknown species
+            }
+
+            this.spriteAtlas.drawSprite(ctx, image, sprite, 0, 0, scale);
+        }
 
         ctx.restore();
 
@@ -167,11 +175,14 @@ export class Renderer {
             case 'idle':
                 return 'walk';
             case 'eating':
-                return creature.species.type === 'scavenger' ? 'eating' : 'walk';
+                // Both herbivores and scavengers have eating animations
+                return creature.species.type === 'herbivore' || creature.species.type === 'scavenger' ? 'eating' : 'walk';
             case 'fleeing':
                 return 'walk';
             case 'hunting':
                 return creature.species.type === 'carnivore' ? 'attack' : 'walk';
+            case 'dead':
+                return 'dead';
             default:
                 return 'walk';
         }

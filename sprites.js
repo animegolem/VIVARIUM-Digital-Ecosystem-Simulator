@@ -10,13 +10,12 @@ export class SpriteAtlas {
 
     async loadImages() {
         const imageFiles = {
-            herbivore: 'images/grass_eaters.jpeg',
             carnivore: 'images/meats_eats.jpeg',
             scavenger: 'images/scavy.jpeg',
             food: 'images/foods.jpg'
         };
 
-        // Load main sprite sheets
+        // Load sprite sheets for carnivore and scavenger
         for (const [key, path] of Object.entries(imageFiles)) {
             const img = new Image();
             const promise = new Promise((resolve, reject) => {
@@ -25,6 +24,62 @@ export class SpriteAtlas {
             });
             img.src = path;
             this.images[key] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load individual herbivore sprites
+        this.images.herbivore = {
+            walk: [],
+            eating: [],
+            heart: [],
+            dead: []
+        };
+
+        // Load walk animations (6 frames)
+        for (let i = 1; i <= 6; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load grass-eater-walk-${i}.png`));
+            });
+            img.src = `images/grasseater/grass-eater-walk-${i}.png`;
+            this.images.herbivore.walk[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load eating animations (2 frames)
+        for (let i = 1; i <= 2; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load grass-eater-eating-${i}.png`));
+            });
+            img.src = `images/grasseater/grass-eater-eating-${i}.png`;
+            this.images.herbivore.eating[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load heart/mating animations (4 frames)
+        for (let i = 1; i <= 4; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load grass-eater-heart-${i}.png`));
+            });
+            img.src = `images/grasseater/grass-eater-heart-${i}.png`;
+            this.images.herbivore.heart[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load dead animations (6 frames)
+        for (let i = 1; i <= 6; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load grass-eater-ded-${i}.png`));
+            });
+            img.src = `images/grasseater/grass-eater-ded-${i}.png`;
+            this.images.herbivore.dead[i - 1] = img;
             this.loadingPromises.push(promise);
         }
 
@@ -46,39 +101,27 @@ export class SpriteAtlas {
         return this;
     }
 
-    // Herbivore (Green Turtle) sprite definitions - Auto-detected centered coordinates
+    // Herbivore sprite getter - returns individual PNG images
     getHerbivoreSprite(state, frame = 0) {
-        const sprites = {
-            walk: [
-                { x: 10, y: 0, w: 214, h: 110 },
-                { x: 244, y: 0, w: 214, h: 110 },
-                { x: 478, y: 0, w: 214, h: 110 },
-                { x: 712, y: 0, w: 214, h: 110 },
-                { x: 946, y: 0, w: 214, h: 110 },
-                { x: 1180, y: 0, w: 214, h: 110 }
-            ],
-            mating: [
-                { x: 10, y: 160, w: 214, h: 120 },
-                { x: 244, y: 160, w: 214, h: 120 },
-                { x: 478, y: 160, w: 214, h: 120 },
-                { x: 712, y: 160, w: 214, h: 120 },
-                { x: 946, y: 160, w: 214, h: 120 },
-                { x: 1180, y: 160, w: 214, h: 120 }
-            ],
-            sad: [
-                { x: 10, y: 320, w: 449, h: 110 },
-                { x: 479, y: 320, w: 449, h: 110 },
-                { x: 948, y: 320, w: 449, h: 110 }
-            ],
-            sleep: [
-                { x: 460, y: 320, w: 299, h: 110 },
-                { x: 779, y: 320, w: 299, h: 110 },
-                { x: 1098, y: 320, w: 299, h: 110 }
-            ]
+        // Map states to animation arrays
+        const stateMap = {
+            walk: 'walk',
+            idle: 'walk',
+            seeking: 'walk',
+            fleeing: 'walk',
+            eating: 'eating',
+            mating: 'heart',
+            dead: 'dead'
         };
 
-        const stateSprites = sprites[state] || sprites.walk;
-        return stateSprites[frame % stateSprites.length];
+        const animState = stateMap[state] || 'walk';
+        const animArray = this.images.herbivore[animState];
+
+        if (!animArray || animArray.length === 0) {
+            return this.images.herbivore.walk[0]; // Fallback to first walk frame
+        }
+
+        return animArray[frame % animArray.length];
     }
 
     // Carnivore (Red Raptor) sprite definitions - Auto-detected centered coordinates
