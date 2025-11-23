@@ -10,12 +10,11 @@ export class SpriteAtlas {
 
     async loadImages() {
         const imageFiles = {
-            carnivore: 'images/meats_eats.jpeg',
             scavenger: 'images/scavy.jpeg',
             food: 'images/foods.jpg'
         };
 
-        // Load sprite sheets for carnivore and scavenger
+        // Load sprite sheets for scavenger only
         for (const [key, path] of Object.entries(imageFiles)) {
             const img = new Image();
             const promise = new Promise((resolve, reject) => {
@@ -83,6 +82,62 @@ export class SpriteAtlas {
             this.loadingPromises.push(promise);
         }
 
+        // Load individual carnivore sprites
+        this.images.carnivore = {
+            walk: [],
+            eating: [],
+            pounce: [],
+            dead: []
+        };
+
+        // Load walk animations (5 frames)
+        for (let i = 1; i <= 5; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load meat-eater-walk-${i}.png`));
+            });
+            img.src = `images/meat-eats/meat-eater-walk-${i}.png`;
+            this.images.carnivore.walk[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load eating animations (3 frames)
+        for (let i = 1; i <= 3; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load meat-eater-eating-${i}.png`));
+            });
+            img.src = `images/meat-eats/meat-eater-eating-${i}.png`;
+            this.images.carnivore.eating[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load pounce/attack animations (4 frames)
+        for (let i = 1; i <= 4; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load meat-eater-pounce-${i}.png`));
+            });
+            img.src = `images/meat-eats/meat-eater-pounce-${i}.png`;
+            this.images.carnivore.pounce[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load dead animations (3 frames)
+        for (let i = 1; i <= 3; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load meat-eater-ded-${i}.png`));
+            });
+            img.src = `images/meat-eats/meat-eater-ded-${i}.png`;
+            this.images.carnivore.dead[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
         // Load individual grass sprites for food
         this.images.grass = [];
         for (let i = 1; i <= 7; i++) {
@@ -124,42 +179,28 @@ export class SpriteAtlas {
         return animArray[frame % animArray.length];
     }
 
-    // Carnivore (Red Raptor) sprite definitions - Auto-detected centered coordinates
+    // Carnivore sprite getter - returns individual PNG images
     getCarnivoreSprite(state, frame = 0) {
-        const sprites = {
-            walk: [
-                { x: 10, y: 0, w: 261, h: 90 },
-                { x: 291, y: 0, w: 261, h: 90 },
-                { x: 572, y: 0, w: 261, h: 90 },
-                { x: 853, y: 0, w: 261, h: 90 },
-                { x: 1134, y: 0, w: 261, h: 90 }
-            ],
-            attack: [
-                { x: 10, y: 120, w: 332, h: 100 },
-                { x: 362, y: 120, w: 332, h: 100 },
-                { x: 714, y: 120, w: 332, h: 100 },
-                { x: 1066, y: 120, w: 332, h: 100 }
-            ],
-            hunt: [
-                { x: 10, y: 250, w: 332, h: 90 },
-                { x: 362, y: 250, w: 332, h: 90 },
-                { x: 714, y: 250, w: 332, h: 90 },
-                { x: 1066, y: 250, w: 332, h: 90 }
-            ],
-            crouch: [
-                { x: 10, y: 370, w: 449, h: 100 },
-                { x: 479, y: 370, w: 449, h: 100 },
-                { x: 948, y: 370, w: 449, h: 100 }
-            ],
-            dying: [
-                { x: 10, y: 500, w: 449, h: 100 },
-                { x: 479, y: 500, w: 449, h: 100 },
-                { x: 948, y: 500, w: 449, h: 100 }
-            ]
+        // Map states to animation arrays
+        const stateMap = {
+            walk: 'walk',
+            idle: 'walk',
+            seeking: 'walk',
+            fleeing: 'walk',
+            eating: 'eating',
+            hunting: 'pounce',
+            attack: 'pounce',
+            dead: 'dead'
         };
 
-        const stateSprites = sprites[state] || sprites.walk;
-        return stateSprites[frame % stateSprites.length];
+        const animState = stateMap[state] || 'walk';
+        const animArray = this.images.carnivore[animState];
+
+        if (!animArray || animArray.length === 0) {
+            return this.images.carnivore.walk[0]; // Fallback to first walk frame
+        }
+
+        return animArray[frame % animArray.length];
     }
 
     // Scavenger (Orange Raccoon) sprite definitions - Auto-detected centered coordinates
