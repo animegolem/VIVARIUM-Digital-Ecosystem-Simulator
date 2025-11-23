@@ -123,22 +123,22 @@ export class Renderer {
         // Draw sprite based on type
         const scale = 0.4;
 
-        if (spriteType === 'herbivore' || spriteType === 'carnivore') {
-            // Herbivores and carnivores use individual PNG files
-            const spriteImage = spriteType === 'herbivore'
-                ? this.spriteAtlas.getHerbivoreSprite(state, frame)
-                : this.spriteAtlas.getCarnivoreSprite(state, frame);
+        if (spriteType === 'herbivore' || spriteType === 'carnivore' || spriteType === 'scavenger') {
+            // All creatures now use individual PNG files
+            let spriteImage;
+            if (spriteType === 'herbivore') {
+                spriteImage = this.spriteAtlas.getHerbivoreSprite(state, frame);
+            } else if (spriteType === 'carnivore') {
+                spriteImage = this.spriteAtlas.getCarnivoreSprite(state, frame);
+            } else {
+                spriteImage = this.spriteAtlas.getScavengerSprite(state, frame);
+            }
 
             if (spriteImage && spriteImage.complete) {
                 const width = spriteImage.width * scale;
                 const height = spriteImage.height * scale;
                 ctx.drawImage(spriteImage, -width / 2, -height / 2, width, height);
             }
-        } else if (spriteType === 'scavenger') {
-            // Scavengers use sprite atlas
-            const sprite = this.spriteAtlas.getScavengerSprite(state, frame);
-            const image = this.spriteAtlas.images.scavenger;
-            this.spriteAtlas.drawSprite(ctx, image, sprite, 0, 0, scale);
         } else {
             ctx.restore();
             return; // Unknown species

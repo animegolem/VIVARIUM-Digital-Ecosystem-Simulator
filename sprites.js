@@ -10,11 +10,10 @@ export class SpriteAtlas {
 
     async loadImages() {
         const imageFiles = {
-            scavenger: 'images/scavy.jpeg',
             food: 'images/foods.jpg'
         };
 
-        // Load sprite sheets for scavenger only
+        // Load sprite sheets for food only
         for (const [key, path] of Object.entries(imageFiles)) {
             const img = new Image();
             const promise = new Promise((resolve, reject) => {
@@ -138,6 +137,62 @@ export class SpriteAtlas {
             this.loadingPromises.push(promise);
         }
 
+        // Load individual scavenger sprites
+        this.images.scavenger = {
+            walk: [],
+            scavenge: [],
+            eating: [],
+            dead: []
+        };
+
+        // Load walk animations (6 frames)
+        for (let i = 1; i <= 6; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load scavy-walks-${i}.png`));
+            });
+            img.src = `images/scavy/scavy-walks-${i}.png`;
+            this.images.scavenger.walk[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load scavenge animations (4 frames)
+        for (let i = 1; i <= 4; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load scavy-scaving-${i}.png`));
+            });
+            img.src = `images/scavy/scavy-scaving-${i}.png`;
+            this.images.scavenger.scavenge[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load eating animations (3 frames)
+        for (let i = 1; i <= 3; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load scavy-eating-${i}.png`));
+            });
+            img.src = `images/scavy/scavy-eating-${i}.png`;
+            this.images.scavenger.eating[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
+        // Load dead animations (3 frames)
+        for (let i = 1; i <= 3; i++) {
+            const img = new Image();
+            const promise = new Promise((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error(`Failed to load scavy-ded-${i}.png`));
+            });
+            img.src = `images/scavy/scavy-ded-${i}.png`;
+            this.images.scavenger.dead[i - 1] = img;
+            this.loadingPromises.push(promise);
+        }
+
         // Load individual grass sprites for food
         this.images.grass = [];
         for (let i = 1; i <= 7; i++) {
@@ -203,44 +258,27 @@ export class SpriteAtlas {
         return animArray[frame % animArray.length];
     }
 
-    // Scavenger (Orange Raccoon) sprite definitions - Auto-detected centered coordinates
+    // Scavenger sprite getter - returns individual PNG images
     getScavengerSprite(state, frame = 0) {
-        const sprites = {
-            walk: [
-                { x: 10, y: 0, w: 261, h: 90 },
-                { x: 291, y: 0, w: 261, h: 90 },
-                { x: 572, y: 0, w: 261, h: 90 },
-                { x: 853, y: 0, w: 261, h: 90 },
-                { x: 1134, y: 0, w: 261, h: 90 }
-            ],
-            walking: [
-                { x: 10, y: 120, w: 214, h: 90 },
-                { x: 244, y: 120, w: 214, h: 90 },
-                { x: 478, y: 120, w: 214, h: 90 },
-                { x: 712, y: 120, w: 214, h: 90 },
-                { x: 946, y: 120, w: 214, h: 90 },
-                { x: 1180, y: 120, w: 214, h: 90 }
-            ],
-            scavenge: [
-                { x: 10, y: 240, w: 332, h: 90 },
-                { x: 362, y: 240, w: 332, h: 90 },
-                { x: 714, y: 240, w: 332, h: 90 },
-                { x: 1066, y: 240, w: 332, h: 90 }
-            ],
-            eating: [
-                { x: 10, y: 360, w: 449, h: 90 },
-                { x: 479, y: 360, w: 449, h: 90 },
-                { x: 948, y: 360, w: 449, h: 90 }
-            ],
-            dying: [
-                { x: 340, y: 360, w: 339, h: 90 },
-                { x: 699, y: 360, w: 339, h: 90 },
-                { x: 1058, y: 360, w: 339, h: 90 }
-            ]
+        // Map states to animation arrays
+        const stateMap = {
+            walk: 'walk',
+            idle: 'walk',
+            seeking: 'walk',
+            fleeing: 'walk',
+            eating: 'eating',
+            scavenging: 'scavenge',
+            dead: 'dead'
         };
 
-        const stateSprites = sprites[state] || sprites.walk;
-        return stateSprites[frame % stateSprites.length];
+        const animState = stateMap[state] || 'walk';
+        const animArray = this.images.scavenger[animState];
+
+        if (!animArray || animArray.length === 0) {
+            return this.images.scavenger.walk[0]; // Fallback to first walk frame
+        }
+
+        return animArray[frame % animArray.length];
     }
 
     // Food resource sprite definitions - Auto-detected centered coordinates
