@@ -1,0 +1,130 @@
+{
+  "herbivore": {
+    "image": "images/grass_eaters.jpeg",
+    "background_threshold": 220,
+    "states": {
+      "walk": {
+        "y": 0,
+        "height": 130,
+        "count": 6,
+        "margin": 10
+      },
+      "mating": {
+        "y": 160,
+        "height": 140,
+        "count": 6,
+        "margin": 10
+      },
+      "sad": {
+        "y": 320,
+        "height": 130,
+        "count": 3,
+        "margin": 10
+      },
+      "sleep": {
+        "y": 320,
+        "height": 130,
+        "count": 3,
+        "margin": 10,
+        "start_x": 450
+      }
+    }
+  },
+  "carnivore": {
+    "image": "images/meats_eats.jpeg",
+    "background_threshold": 220,
+    "states": {
+      "walk": {
+        "y": 0,
+        "height": 110,
+        "count": 5,
+        "margin": 10
+      },
+      "attack": {
+        "y": 120,
+        "height": 120,
+        "count": 4,
+        "margin": 10
+      },
+      "hunt": {
+        "y": 250,
+        "height": 110,
+        "count": 4,
+        "margin": 10
+      },
+      "crouch": {
+        "y": 370,
+        "height": 120,
+        "count": 3,
+        "margin": 10
+      },
+      "dying": {
+        "y": 500,
+        "height": 120,
+        "count": 3,
+        "margin": 10
+      }
+    }
+  },
+  "scavenger": {
+    "image": "images/scavy.jpeg",
+    "background_threshold": 220,
+    "states": {
+      "walk": {
+        "y": 0,
+        "height": 110,
+        "count": 5,
+        "margin": 10
+      },
+      "walking": {
+        "y": 120,
+        "height": 110,
+        "count": 6,
+        "margin": 10
+      },
+      "scavenge": {
+        "y": 240,
+        "height": 110,
+        "count": 4,
+        "margin": 10
+      },
+      "eating": {
+        "y": 360,
+        "height": 110,
+        "count": 3,
+        "margin": 10
+      },
+      "dying": {
+        "y": 360,
+        "height": 110,
+        "count": 3,
+        "margin": 10,
+        "start_x": 330
+      }
+    }
+  },
+  "food": {
+    "image": "images/foods.jpg",
+    "background_threshold": 230,
+    "states": {
+      "bush": {
+        "y": 0,
+        "height": 140,
+        "count": 7,
+        "margin": 10
+      },
+      "mushroom": {
+        "y": 200,
+        "height": 140,
+        "count": 7,
+        "margin": 10
+      },
+      "crystal": {
+        "y": 410,
+        "height": 140,
+        "count": 7,
+        "margin": 10
+      }
+    }
+  }
+}
