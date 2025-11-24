@@ -20,7 +20,6 @@ export class Gene {
     }
 
     crossover(other) {
-        // Average of parent genes with some randomness
         const mix = Math.random();
         const newValue = this.value * mix + other.value * (1 - mix);
         return new Gene(newValue, this.mutationRate, this.mutationAmount);
@@ -58,7 +57,6 @@ export class Genome {
             if (gene1 && gene2) {
                 childGenes[name] = gene1.crossover(gene2);
             } else {
-                // If only one parent has the gene, inherit it with mutation
                 childGenes[name] = (gene1 || gene2).mutate();
             }
         }
@@ -78,50 +76,39 @@ export class Genome {
         }
         return new Genome(genes);
     }
-
-    clone() {
-        const clonedGenes = {};
-        for (const [name, gene] of Object.entries(this.genes)) {
-            clonedGenes[name] = new Gene(
-                gene.value,
-                gene.mutationRate,
-                gene.mutationAmount
-            );
-        }
-        return new Genome(clonedGenes);
-    }
 }
 
-// Standard genome templates for different species
+// Genome templates - balanced for ecosystem stability
 export const GenomeTemplates = {
     herbivore: {
-        speed: { min: 0.5, max: 2.5, mutationRate: 0.15, mutationAmount: 0.3 },
-        size: { min: 8, max: 20, mutationRate: 0.1, mutationAmount: 0.2 },
-        visionRange: { min: 50, max: 150, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.02, max: 0.15, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 100, max: 250, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 100, max: 150, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 1200, max: 2400, mutationRate: 0.1, mutationAmount: 0.2 }
+        speed: { min: 0.8, max: 2.0, mutationRate: 0.12, mutationAmount: 0.25 },
+        size: { min: 10, max: 18, mutationRate: 0.1, mutationAmount: 0.2 },
+        visionRange: { min: 60, max: 120, mutationRate: 0.12, mutationAmount: 0.2 },
+        metabolism: { min: 0.03, max: 0.08, mutationRate: 0.1, mutationAmount: 0.15 },
+        maxEnergy: { min: 120, max: 200, mutationRate: 0.1, mutationAmount: 0.2 },
+        reproductionThreshold: { min: 110, max: 150, mutationRate: 0.08, mutationAmount: 0.15 },
+        lifespan: { min: 1500, max: 2500, mutationRate: 0.1, mutationAmount: 0.2 }
     },
 
     carnivore: {
-        speed: { min: 1.5, max: 4, mutationRate: 0.15, mutationAmount: 0.3 },
-        size: { min: 10, max: 25, mutationRate: 0.1, mutationAmount: 0.2 },
-        visionRange: { min: 80, max: 200, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.05, max: 0.2, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 120, max: 300, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 130, max: 200, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 1000, max: 2000, mutationRate: 0.1, mutationAmount: 0.2 },
-        attackPower: { min: 15, max: 40, mutationRate: 0.15, mutationAmount: 0.3 }
+        speed: { min: 1.5, max: 3.0, mutationRate: 0.12, mutationAmount: 0.25 },
+        size: { min: 12, max: 22, mutationRate: 0.1, mutationAmount: 0.2 },
+        visionRange: { min: 100, max: 180, mutationRate: 0.12, mutationAmount: 0.2 },
+        metabolism: { min: 0.06, max: 0.12, mutationRate: 0.1, mutationAmount: 0.15 },
+        maxEnergy: { min: 150, max: 250, mutationRate: 0.1, mutationAmount: 0.2 },
+        reproductionThreshold: { min: 140, max: 200, mutationRate: 0.08, mutationAmount: 0.15 },
+        lifespan: { min: 1200, max: 2000, mutationRate: 0.1, mutationAmount: 0.2 },
+        attackPower: { min: 20, max: 35, mutationRate: 0.15, mutationAmount: 0.25 }
     },
 
     scavenger: {
-        speed: { min: 1, max: 3, mutationRate: 0.15, mutationAmount: 0.3 },
-        size: { min: 6, max: 15, mutationRate: 0.1, mutationAmount: 0.2 },
-        visionRange: { min: 60, max: 180, mutationRate: 0.12, mutationAmount: 0.25 },
-        metabolism: { min: 0.015, max: 0.12, mutationRate: 0.1, mutationAmount: 0.2 },
-        maxEnergy: { min: 100, max: 220, mutationRate: 0.1, mutationAmount: 0.2 },
-        reproductionThreshold: { min: 90, max: 140, mutationRate: 0.08, mutationAmount: 0.15 },
-        lifespan: { min: 1400, max: 2800, mutationRate: 0.1, mutationAmount: 0.2 }
+        // Scavengers: slower, higher metabolism, shorter lives - they're opportunists not dominators
+        speed: { min: 0.6, max: 1.8, mutationRate: 0.12, mutationAmount: 0.25 },
+        size: { min: 8, max: 14, mutationRate: 0.1, mutationAmount: 0.2 },
+        visionRange: { min: 70, max: 140, mutationRate: 0.12, mutationAmount: 0.2 },
+        metabolism: { min: 0.05, max: 0.10, mutationRate: 0.1, mutationAmount: 0.15 }, // Higher metabolism
+        maxEnergy: { min: 100, max: 160, mutationRate: 0.1, mutationAmount: 0.2 }, // Lower max energy
+        reproductionThreshold: { min: 120, max: 160, mutationRate: 0.08, mutationAmount: 0.15 }, // Higher threshold
+        lifespan: { min: 1000, max: 1800, mutationRate: 0.1, mutationAmount: 0.2 } // Shorter lives
     }
 };

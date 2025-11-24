@@ -33,14 +33,20 @@ export class SpriteAtlas {
     }
 
     async loadImages() {
-        const imageFiles = {
-            food: 'images/foods.jpg'
+        // Individual sprites are now used instead of sprite sheets
+        // The old foods.jpg sprite sheet is no longer needed
+        
+        // Expected max dimensions for individual sprites
+        // Sprite sheets are much larger, so this helps detect accidentally included sheets
+        const MAX_SPRITE_WIDTH = 300;
+        const MAX_SPRITE_HEIGHT = 300;
+        
+        const validateSpriteSize = (img, name) => {
+            if (img.naturalWidth > MAX_SPRITE_WIDTH || img.naturalHeight > MAX_SPRITE_HEIGHT) {
+                console.warn(`WARNING: ${name} is unusually large (${img.naturalWidth}x${img.naturalHeight}). ` +
+                    `May be a sprite sheet instead of individual sprite!`);
+            }
         };
-
-        // Load sprite sheets for food only
-        for (const [key, path] of Object.entries(imageFiles)) {
-            this.images[key] = this.createImage(path, `Failed to load ${path}`);
-        }
 
         // Load individual herbivore sprites
         this.images.herbivore = {
@@ -190,12 +196,46 @@ export class SpriteAtlas {
         }
 
         await Promise.all(this.loadingPromises);
+        
+        // Validate all loaded sprites to detect accidentally included sprite sheets
+        console.log('Validating sprite sizes...');
+        const validateArray = (arr, name) => {
+            if (!Array.isArray(arr)) return;
+            arr.forEach((img, i) => {
+                if (img && img.naturalWidth && img.naturalHeight) {
+                    if (img.naturalWidth > 300 || img.naturalHeight > 300) {
+                        console.error(`SPRITE SIZE ERROR: ${name}[${i}] is ${img.naturalWidth}x${img.naturalHeight} - likely a sprite sheet!`);
+                    }
+                }
+            });
+        };
+        
+        // Validate creature sprites
+        ['herbivore', 'carnivore', 'scavenger'].forEach(type => {
+            const creature = this.images[type];
+            if (creature) {
+                Object.entries(creature).forEach(([state, arr]) => {
+                    validateArray(arr, `${type}.${state}`);
+                });
+            }
+        });
+        
+        // Validate food sprites
+        ['grass', 'mushroom', 'crystal'].forEach(type => {
+            validateArray(this.images[type], type);
+        });
+        
         this.loaded = true;
         return this;
     }
 
     // Herbivore sprite getter - returns individual PNG images
     getHerbivoreSprite(state, frame = 0) {
+        // Guard: ensure sprites are loaded
+        if (!this.loaded || !this.images.herbivore) {
+            return null;
+        }
+        
         // Map states to animation arrays
         const stateMap = {
             walk: 'walk',
@@ -210,15 +250,32 @@ export class SpriteAtlas {
         const animState = stateMap[state] || 'walk';
         const animArray = this.images.herbivore[animState];
 
-        if (!animArray || animArray.length === 0) {
-            return this.images.herbivore.walk[0]; // Fallback to first walk frame
+        if (!animArray || !Array.isArray(animArray) || animArray.length === 0) {
+            const fallback = this.images.herbivore.walk;
+            return (fallback && fallback[0]) ? fallback[0] : null;
         }
 
-        return animArray[frame % animArray.length];
+        // Ensure frame is a valid number
+        const safeFrame = (typeof frame === 'number' && !isNaN(frame)) ? Math.floor(frame) : 0;
+        const index = ((safeFrame % animArray.length) + animArray.length) % animArray.length;
+        
+        const result = animArray[index];
+        
+        // Validate we're returning a single Image, not an array or object
+        if (result && result instanceof Image) {
+            return result;
+        }
+        
+        return null;
     }
 
     // Carnivore sprite getter - returns individual PNG images
     getCarnivoreSprite(state, frame = 0) {
+        // Guard: ensure sprites are loaded
+        if (!this.loaded || !this.images.carnivore) {
+            return null;
+        }
+        
         // Map states to animation arrays
         const stateMap = {
             walk: 'walk',
@@ -234,15 +291,32 @@ export class SpriteAtlas {
         const animState = stateMap[state] || 'walk';
         const animArray = this.images.carnivore[animState];
 
-        if (!animArray || animArray.length === 0) {
-            return this.images.carnivore.walk[0]; // Fallback to first walk frame
+        if (!animArray || !Array.isArray(animArray) || animArray.length === 0) {
+            const fallback = this.images.carnivore.walk;
+            return (fallback && fallback[0]) ? fallback[0] : null;
         }
 
-        return animArray[frame % animArray.length];
+        // Ensure frame is a valid number
+        const safeFrame = (typeof frame === 'number' && !isNaN(frame)) ? Math.floor(frame) : 0;
+        const index = ((safeFrame % animArray.length) + animArray.length) % animArray.length;
+        
+        const result = animArray[index];
+        
+        // Validate we're returning a single Image, not an array or object
+        if (result && result instanceof Image) {
+            return result;
+        }
+        
+        return null;
     }
 
     // Scavenger sprite getter - returns individual PNG images
     getScavengerSprite(state, frame = 0) {
+        // Guard: ensure sprites are loaded
+        if (!this.loaded || !this.images.scavenger) {
+            return null;
+        }
+        
         // Map states to animation arrays
         const stateMap = {
             walk: 'walk',
@@ -257,61 +331,55 @@ export class SpriteAtlas {
         const animState = stateMap[state] || 'walk';
         const animArray = this.images.scavenger[animState];
 
-        if (!animArray || animArray.length === 0) {
-            return this.images.scavenger.walk[0]; // Fallback to first walk frame
+        if (!animArray || !Array.isArray(animArray) || animArray.length === 0) {
+            const fallback = this.images.scavenger.walk;
+            return (fallback && fallback[0]) ? fallback[0] : null;
         }
 
-        return animArray[frame % animArray.length];
+        // Ensure frame is a valid number
+        const safeFrame = (typeof frame === 'number' && !isNaN(frame)) ? Math.floor(frame) : 0;
+        const index = ((safeFrame % animArray.length) + animArray.length) % animArray.length;
+        
+        const result = animArray[index];
+        
+        // Validate we're returning a single Image, not an array or object
+        if (result && result instanceof Image) {
+            return result;
+        }
+        
+        return null;
     }
 
-    // Food resource sprite definitions - Auto-detected centered coordinates
-    getFoodSprite(type, growth = 0) {
-        const sprites = {
-            bush: [
-                { x: 10, y: 0, w: 181, h: 120 },
-                { x: 211, y: 0, w: 181, h: 120 },
-                { x: 412, y: 0, w: 181, h: 120 },
-                { x: 613, y: 0, w: 181, h: 120 },
-                { x: 814, y: 0, w: 181, h: 120 },
-                { x: 1015, y: 0, w: 181, h: 120 },
-                { x: 1216, y: 0, w: 181, h: 120 }
-            ],
-            mushroom: [
-                { x: 10, y: 200, w: 181, h: 120 },
-                { x: 211, y: 200, w: 181, h: 120 },
-                { x: 412, y: 200, w: 181, h: 120 },
-                { x: 613, y: 200, w: 181, h: 120 },
-                { x: 814, y: 200, w: 181, h: 120 },
-                { x: 1015, y: 200, w: 181, h: 120 },
-                { x: 1216, y: 200, w: 181, h: 120 }
-            ],
-            crystal: [
-                { x: 10, y: 410, w: 181, h: 120 },
-                { x: 211, y: 410, w: 181, h: 120 },
-                { x: 412, y: 410, w: 181, h: 120 },
-                { x: 613, y: 410, w: 181, h: 120 },
-                { x: 814, y: 410, w: 181, h: 120 },
-                { x: 1015, y: 410, w: 181, h: 120 },
-                { x: 1216, y: 410, w: 181, h: 120 }
-            ]
-        };
+    // Food sprite getter - returns individual PNG images
+    getFoodSpriteImage(type, growth = 0) {
+        // Guard: ensure sprites are loaded
+        if (!this.loaded) {
+            return null;
+        }
+        
+        // Get the correct food array based on type
+        const foodArray = this.images[type];
+        
+        if (!foodArray || !Array.isArray(foodArray) || foodArray.length === 0) {
+            // Try grass as fallback
+            const fallback = this.images.grass;
+            return (fallback && fallback[0] instanceof Image) ? fallback[0] : null;
+        }
 
-        const typeSprites = sprites[type] || sprites.bush;
-        const index = Math.min(Math.floor(growth), typeSprites.length - 1);
-        return typeSprites[index];
-    }
-
-    drawSprite(ctx, image, sprite, x, y, scale = 1) {
-        if (!this.loaded || !sprite) return;
-
-        const drawWidth = sprite.w * scale;
-        const drawHeight = sprite.h * scale;
-
-        ctx.drawImage(
-            image,
-            sprite.x, sprite.y, sprite.w, sprite.h,
-            x - drawWidth / 2, y - drawHeight / 2, drawWidth, drawHeight
-        );
+        // Ensure growth is a valid number
+        const safeGrowth = (typeof growth === 'number' && !isNaN(growth)) ? Math.floor(growth) : 0;
+        const index = Math.max(0, Math.min(safeGrowth, foodArray.length - 1));
+        
+        const result = foodArray[index];
+        
+        // Validate we're returning a single Image, not an array or object
+        if (result && result instanceof Image) {
+            return result;
+        }
+        
+        // Log unexpected value for debugging
+        console.error('getFoodSpriteImage: unexpected value at index', index, 'for type', type, ':', result);
+        return null;
     }
 }
 

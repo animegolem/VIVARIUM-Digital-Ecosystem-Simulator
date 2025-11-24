@@ -16,6 +16,15 @@ class World {
         this.fps = 0;
         this.lastFrameTime = Date.now();
 
+        // Ecosystem carrying capacity - hard limits
+        this.carryingCapacity = {
+            herbivore: 35,
+            carnivore: 12,
+            scavenger: 20,
+            total: 60
+        };
+        this.maxFood = 70;
+
         // Statistics
         this.stats = {
             herbivoreCount: 0,
@@ -28,13 +37,13 @@ class World {
     }
 
     initialize() {
-        // Spawn initial creatures
-        this.spawnCreatures(SPECIES.HERBIVORE, 15);
+        // Spawn initial creatures - healthy starting population
+        this.spawnCreatures(SPECIES.HERBIVORE, 18);
         this.spawnCreatures(SPECIES.CARNIVORE, 5);
         this.spawnCreatures(SPECIES.SCAVENGER, 8);
 
-        // Spawn initial food
-        this.spawnFood(30);
+        // Spawn plenty of initial food
+        this.spawnFood(35);
     }
 
     spawnCreatures(species, count) {
@@ -53,17 +62,18 @@ class World {
 
     spawnFood(count) {
         for (let i = 0; i < count; i++) {
-            this.food.push(new Food(
-                Math.random() * this.width,
-                Math.random() * this.height
-            ));
+            if (this.food.length < this.maxFood) {
+                this.food.push(new Food(
+                    Math.random() * this.width,
+                    Math.random() * this.height
+                ));
+            }
         }
     }
 
     update() {
         if (this.paused) return;
 
-        // Update multiple times based on speed
         for (let i = 0; i < this.speed; i++) {
             this.singleUpdate();
         }
@@ -72,9 +82,22 @@ class World {
     singleUpdate() {
         this.time++;
 
+        // Calculate population stress
+        const stress = this.calculateStress();
+
         // Update all creatures
         const newborns = [];
         for (const creature of this.creatures) {
+            if (!creature.alive) continue;
+            
+            // Apply population stress - creatures in overpopulated species burn more energy
+            // But keep it gentle so populations can recover
+            const speciesStress = stress[creature.species.type] || 0;
+            if (speciesStress > 0.5) { // Only apply stress when significantly over capacity
+                const stressPenalty = creature.metabolism * speciesStress * 0.5;
+                creature.energy -= stressPenalty;
+            }
+            
             const child = creature.update(this);
             if (child) {
                 newborns.push(child);
@@ -94,42 +117,53 @@ class World {
         // Remove dead food
         this.food = this.food.filter(f => f.alive);
 
-        // Randomly spawn new food (2% chance per frame)
-        if (Math.random() < 0.02 && this.food.length < 100) {
-            const beforeCount = this.food.length;
+        // Spawn new food - faster when depleted
+        const foodRatio = this.food.length / this.maxFood;
+        const spawnChance = foodRatio < 0.3 ? 0.08 : foodRatio < 0.5 ? 0.05 : 0.025;
+        if (Math.random() < spawnChance && this.food.length < this.maxFood) {
             this.spawnFood(1);
-            if (window.eventLog && this.food.length > beforeCount) {
-                const newFood = this.food[this.food.length - 1];
-                window.eventLog.log('food', `New ${newFood.type || 'food'} spawned`, {
-                    frame: this.time,
-                    foodType: newFood.type,
-                    position: { x: Math.round(newFood.x), y: Math.round(newFood.y) }
-                });
-            }
         }
 
-        // Remove corpses after some time (300 frames for scavengers to find them)
+        // Clean up old corpses
         this.creatures = this.creatures.filter(c => {
             if (!c.alive && c.deathTime !== undefined) {
                 const timeSinceDeath = this.time - c.deathTime;
-                if (timeSinceDeath > 300) {
+                if (timeSinceDeath > 180) {
                     this.stats.totalDeaths++;
-                    if (window.eventLog) {
-                        window.eventLog.log('corpse', `${c.species.name} corpse decayed`, {
-                            frame: this.time,
-                            species: c.species.name,
-                            age: c.age,
-                            timeSinceDeath,
-                            id: c.id
-                        });
-                    }
-                    return false; // Remove corpse
+                    return false;
                 }
             }
-            return true; // Keep creature
+            return true;
         });
 
-        // Update statistics
+        // Population recovery - respawn creatures if species goes extinct or very low
+        // This represents "immigration" and keeps the ecosystem alive
+        const minPop = { herbivore: 3, carnivore: 2, scavenger: 2 };
+        for (const [type, species] of [['herbivore', SPECIES.HERBIVORE], ['carnivore', SPECIES.CARNIVORE], ['scavenger', SPECIES.SCAVENGER]]) {
+            const count = this.creatures.filter(c => c.alive && c.species.type === type).length;
+            if (count < minPop[type]) {
+                // Chance each frame to spawn a new creature
+                if (Math.random() < 0.03) {
+                    this.spawnCreatures(species, 1);
+                }
+            }
+        }
+
+        // Soft population control - only cull at extreme overpopulation (4x capacity)
+        for (const type of ['herbivore', 'carnivore', 'scavenger']) {
+            const cap = this.carryingCapacity[type];
+            const alive = this.creatures.filter(c => c.alive && c.species.type === type);
+            if (alive.length > cap * 4) {
+                const toKill = alive.length - cap * 3;
+                for (let i = 0; i < toKill; i++) {
+                    const victim = alive[Math.floor(Math.random() * alive.length)];
+                    if (victim && victim.alive) {
+                        victim.die(this.time, 'overcrowding');
+                    }
+                }
+            }
+        }
+
         this.updateStats();
 
         // Calculate FPS
@@ -138,16 +172,26 @@ class World {
         this.lastFrameTime = now;
     }
 
+    calculateStress() {
+        const stress = {};
+        
+        for (const type of ['herbivore', 'carnivore', 'scavenger']) {
+            const count = this.creatures.filter(c => c.alive && c.species.type === type).length;
+            const capacity = this.carryingCapacity[type];
+            // Stress starts at 0 when under capacity, grows as population exceeds capacity
+            stress[type] = Math.max(0, (count - capacity) / capacity);
+        }
+        
+        const totalCount = this.creatures.filter(c => c.alive).length;
+        stress.total = Math.max(0, (totalCount - this.carryingCapacity.total) / this.carryingCapacity.total);
+        
+        return stress;
+    }
+
     updateStats() {
-        this.stats.herbivoreCount = this.creatures.filter(
-            c => c.alive && c.species.type === 'herbivore'
-        ).length;
-        this.stats.carnivoreCount = this.creatures.filter(
-            c => c.alive && c.species.type === 'carnivore'
-        ).length;
-        this.stats.scavengerCount = this.creatures.filter(
-            c => c.alive && c.species.type === 'scavenger'
-        ).length;
+        this.stats.herbivoreCount = this.creatures.filter(c => c.alive && c.species.type === 'herbivore').length;
+        this.stats.carnivoreCount = this.creatures.filter(c => c.alive && c.species.type === 'carnivore').length;
+        this.stats.scavengerCount = this.creatures.filter(c => c.alive && c.species.type === 'scavenger').length;
         this.stats.foodCount = this.food.length;
     }
 
@@ -194,58 +238,35 @@ class Vivarium {
 
     setupEventListeners() {
         // Prevent drag events on canvas
-        this.canvas.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-            return false;
-        });
-        this.canvas.addEventListener('drag', (e) => {
-            e.preventDefault();
-            return false;
-        });
+        this.canvas.addEventListener('dragstart', e => e.preventDefault());
+        this.canvas.addEventListener('drag', e => e.preventDefault());
 
         // Pause button
-        document.getElementById('pause-btn').addEventListener('click', () => {
-            this.togglePause();
-        });
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
 
         // Reset button
         document.getElementById('reset-btn').addEventListener('click', () => {
-            if (confirm('Are you sure you want to reset the ecosystem?')) {
+            if (confirm('Reset the ecosystem?')) {
                 this.world.reset();
-                if (window.eventLog) {
-                    window.eventLog.clear();
-                    window.eventLog.log('system', 'World reset', { frame: this.world.time });
-                }
             }
         });
 
         // Speed slider
-        const speedSlider = document.getElementById('speed-slider');
-        speedSlider.addEventListener('input', (e) => {
+        document.getElementById('speed-slider').addEventListener('input', (e) => {
             this.world.speed = parseFloat(e.target.value);
             document.getElementById('speed-display').textContent = `${this.world.speed}x`;
         });
 
         // Add food button
         document.getElementById('add-food-btn').addEventListener('click', () => {
-            this.world.spawnFood(10);
-            if (window.eventLog) {
-                window.eventLog.log('food', 'Manually spawned 10 food items', { frame: this.world.time });
-            }
+            this.world.spawnFood(5);
         });
 
         // Add creature button
         document.getElementById('add-creature-btn').addEventListener('click', () => {
-            // Cycle through species
             const species = [SPECIES.HERBIVORE, SPECIES.CARNIVORE, SPECIES.SCAVENGER];
             const randomSpecies = species[Math.floor(Math.random() * species.length)];
             this.world.addCreature(randomSpecies);
-            if (window.eventLog) {
-                window.eventLog.log('creature', `Manually added ${randomSpecies.name}`, {
-                    frame: this.world.time,
-                    species: randomSpecies.name
-                });
-            }
         });
 
         // Canvas click for creature selection
@@ -253,35 +274,6 @@ class Vivarium {
             const creature = this.renderer.getCreatureAtPosition(e.clientX, e.clientY, this.world.creatures);
             this.renderer.setSelectedCreature(creature);
             this.updateInfoPanel(creature);
-        });
-
-        // Event log controls
-        document.getElementById('toggle-log-btn').addEventListener('click', () => {
-            const enabled = window.eventLog.toggle();
-            document.getElementById('toggle-log-btn').textContent = enabled ? '⏸ Pause Log' : '▶ Resume Log';
-        });
-
-        document.getElementById('clear-log-btn').addEventListener('click', () => {
-            window.eventLog.clear();
-            this.updateEventLog();
-        });
-
-        document.getElementById('export-log-btn').addEventListener('click', () => {
-            const logData = window.eventLog.export();
-            const blob = new Blob([logData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `vivarium-log-${Date.now()}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-
-        // Event log filters
-        document.querySelectorAll('.log-filter').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                this.updateEventLog();
-            });
         });
 
         // Window resize
@@ -296,120 +288,86 @@ class Vivarium {
         const pauseBtn = document.getElementById('pause-btn');
         const pauseIndicator = document.getElementById('pause-indicator');
 
-        if (this.world.paused) {
-            pauseBtn.textContent = '▶ Resume';
-            pauseIndicator.classList.remove('hidden');
-        } else {
-            pauseBtn.textContent = '⏸ Pause';
-            pauseIndicator.classList.add('hidden');
-        }
+        pauseBtn.textContent = this.world.paused ? '▶ Resume' : '⏸ Pause';
+        pauseIndicator.classList.toggle('hidden', !this.world.paused);
     }
 
     updateUI() {
-        // Update population stats
+        // Population stats
         const statsContainer = document.getElementById('population-stats');
+        const h = this.world.stats.herbivoreCount;
+        const c = this.world.stats.carnivoreCount;
+        const s = this.world.stats.scavengerCount;
+        
         statsContainer.innerHTML = `
-            <div class="stat-item">
-                <span>🟢 Herbivores:</span>
-                <span>${this.world.stats.herbivoreCount}</span>
+            <div class="stat-item herbivore">
+                <span>🌿 Herbivores</span>
+                <span>${h}</span>
+            </div>
+            <div class="stat-item carnivore">
+                <span>🔴 Carnivores</span>
+                <span>${c}</span>
+            </div>
+            <div class="stat-item scavenger">
+                <span>🟡 Scavengers</span>
+                <span>${s}</span>
             </div>
             <div class="stat-item">
-                <span>🔴 Carnivores:</span>
-                <span>${this.world.stats.carnivoreCount}</span>
-            </div>
-            <div class="stat-item">
-                <span>🟡 Scavengers:</span>
-                <span>${this.world.stats.scavengerCount}</span>
-            </div>
-            <div class="stat-item">
-                <span>Total Births:</span>
-                <span>${this.world.stats.totalBirths}</span>
-            </div>
-            <div class="stat-item">
-                <span>Total Deaths:</span>
-                <span>${this.world.stats.totalDeaths}</span>
+                <span>Generation</span>
+                <span>${this.world.generation}</span>
             </div>
         `;
 
-        // Update environment stats
+        // Environment stats
         document.getElementById('food-count').textContent = this.world.stats.foodCount;
-        document.getElementById('generation-count').textContent = this.world.generation;
         document.getElementById('time-elapsed').textContent = `${Math.floor(this.world.time / 60)}s`;
-
-        // Update species guide
-        this.updateSpeciesGuide();
-    }
-
-    updateSpeciesGuide() {
-        const guideContainer = document.getElementById('species-guide');
-        const speciesArray = [SPECIES.HERBIVORE, SPECIES.CARNIVORE, SPECIES.SCAVENGER];
-
-        guideContainer.innerHTML = speciesArray.map(species => `
-            <div class="species-item" style="border-color: ${species.color}">
-                <div class="species-name" style="color: ${species.color}">${species.name}</div>
-                <div class="species-desc">${species.description}</div>
-            </div>
-        `).join('');
     }
 
     updateInfoPanel(creature) {
         const infoPanel = document.getElementById('info-panel');
 
         if (!creature) {
-            infoPanel.innerHTML = 'Click on creatures to see their stats!';
+            infoPanel.innerHTML = '<p class="hint">Click a creature to inspect it</p>';
             return;
         }
 
         const energyPercent = Math.round((creature.energy / creature.maxEnergy) * 100);
         const agePercent = Math.round((creature.age / creature.maxLifespan) * 100);
+        const energyClass = energyPercent > 50 ? 'good' : energyPercent > 25 ? 'warn' : 'danger';
 
         infoPanel.innerHTML = `
             <div class="creature-info">
-                <strong style="color: ${creature.species.color}">${creature.species.name}</strong><br>
-                <div><strong>Generation:</strong> ${creature.generation}</div>
-                <div><strong>Age:</strong> ${creature.age} / ${Math.round(creature.maxLifespan)} (${agePercent}%)</div>
-                <div><strong>Energy:</strong> ${Math.round(creature.energy)} / ${Math.round(creature.maxEnergy)} (${energyPercent}%)</div>
-                <div><strong>State:</strong> ${creature.state}</div>
-                <hr style="border-color: #00ff41; margin: 10px 0;">
-                <div><strong>Speed:</strong> ${creature.speed.toFixed(2)}</div>
-                <div><strong>Size:</strong> ${creature.size.toFixed(1)}</div>
-                <div><strong>Vision:</strong> ${Math.round(creature.visionRange)}</div>
-                <div><strong>Metabolism:</strong> ${creature.metabolism.toFixed(3)}</div>
+                <div class="creature-header" style="color: ${creature.species.color}">
+                    ${creature.species.name} <span class="gen">Gen ${creature.generation}</span>
+                </div>
+                <div class="stat-row">
+                    <span>State</span>
+                    <span class="state-${creature.state}">${creature.state}</span>
+                </div>
+                <div class="stat-row">
+                    <span>Energy</span>
+                    <span class="${energyClass}">${Math.round(creature.energy)}/${Math.round(creature.maxEnergy)}</span>
+                </div>
+                <div class="stat-row">
+                    <span>Age</span>
+                    <span>${creature.age}/${Math.round(creature.maxLifespan)}</span>
+                </div>
+                <div class="stat-row">
+                    <span>Speed</span>
+                    <span>${creature.speed.toFixed(1)}</span>
+                </div>
+                <div class="stat-row">
+                    <span>Vision</span>
+                    <span>${Math.round(creature.visionRange)}</span>
+                </div>
             </div>
         `;
     }
 
-    updateEventLog() {
-        if (!window.eventLog) return;
-
-        const logContainer = document.getElementById('event-log');
-
-        // Get active filters
-        const activeFilters = Array.from(document.querySelectorAll('.log-filter:checked'))
-            .map(cb => cb.value);
-
-        // Get recent events
-        const events = window.eventLog.getRecent(100, activeFilters);
-
-        // Display events (most recent at bottom)
-        logContainer.innerHTML = events.map(event => {
-            const time = new Date(event.timestamp).toLocaleTimeString();
-            return `<div class="event-entry ${event.type}">
-                <span class="event-time">${time}</span>
-                <span class="event-frame">F${event.frame}</span>
-                ${event.message}
-            </div>`;
-        }).join('');
-
-        // Auto-scroll to bottom
-        logContainer.scrollTop = logContainer.scrollHeight;
-    }
-
-    start() {
-        this.updateSpeciesGuide();
-        if (window.eventLog) {
-            window.eventLog.log('system', 'Vivarium initialized', { frame: this.world.time });
-        }
+    async start() {
+        console.log('⏳ Loading sprites...');
+        await this.renderer.waitForSprites();
+        console.log('✓ Starting simulation');
         this.loop();
     }
 
@@ -417,15 +375,12 @@ class Vivarium {
         this.world.update();
         this.renderer.render(this.world);
         this.updateUI();
-        this.updateEventLog();
-
         requestAnimationFrame(() => this.loop());
     }
 }
 
-// Initialize the application when the page loads
+// Initialize
 window.addEventListener('DOMContentLoaded', () => {
-    const vivarium = new Vivarium();
-    console.log('🔬 VIVARIUM initialized');
-    console.log('Watch as creatures evolve, hunt, flee, and reproduce!');
+    window.vivarium = new Vivarium();
+    console.log('🔬 VIVARIUM ready');
 });

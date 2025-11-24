@@ -4,11 +4,20 @@ import { SpriteAtlas, AnimationController } from './sprites.js';
 export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
+        // Use willReadFrequently to hint the browser to keep the canvas in CPU memory
+        // This can help with GPU synchronization issues that cause rendering artifacts
+        this.ctx = canvas.getContext('2d', { 
+            willReadFrequently: false,
+            alpha: false  // Opaque canvas can be faster and more stable
+        });
         this.selectedCreature = null;
         this.spriteAtlas = null;
         this.animController = new AnimationController();
         this.ready = false;
+        
+        // Debug: track renders per frame to catch duplication bugs
+        this.frameRenderCount = new Map();
+        this.currentFrame = 0;
 
         // Load sprites
         this.loadSprites();
@@ -23,6 +32,26 @@ export class Renderer {
         await this.spriteAtlas.loadImages();
         this.ready = true;
         console.log('✓ Sprites loaded successfully');
+        return true;
+    }
+    
+    // Allow external code to wait for sprites
+    async waitForSprites() {
+        // If already ready, return immediately
+        if (this.ready && this.spriteAtlas?.loaded) {
+            return true;
+        }
+        // Otherwise poll until ready (sprites are loading)
+        return new Promise(resolve => {
+            const check = () => {
+                if (this.ready && this.spriteAtlas?.loaded) {
+                    resolve(true);
+                } else {
+                    requestAnimationFrame(check);
+                }
+            };
+            check();
+        });
     }
 
     resize() {
@@ -71,27 +100,22 @@ export class Renderer {
             return;
         }
 
-        // Use individual food sprites based on type
-        const foodSprites = this.spriteAtlas.images[food.type];
-        if (foodSprites && foodSprites.length > 0) {
-            // Pick a sprite based on growth stage (0-6)
-            const growth = Math.floor(food.growth || 0);
-            const spriteIndex = Math.min(growth, foodSprites.length - 1);
-            const foodImage = foodSprites[spriteIndex];
+        // Use the validated food sprite getter
+        const growth = Math.floor(food.growth || 0);
+        const foodImage = this.spriteAtlas.getFoodSpriteImage(food.type, growth);
 
-            // Only draw if image is complete AND has valid dimensions
-            if (foodImage && foodImage.complete && foodImage.naturalWidth > 0) {
-                const scale = 0.3;
-                const width = foodImage.width * scale;
-                const height = foodImage.height * scale;
-                this.ctx.drawImage(
-                    foodImage,
-                    food.x - width / 2,
-                    food.y - height / 2,
-                    width,
-                    height
-                );
-            }
+        // Only draw if we got a valid image
+        if (foodImage && foodImage.complete && foodImage.naturalWidth > 0) {
+            const scale = 0.3;
+            const width = foodImage.width * scale;
+            const height = foodImage.height * scale;
+            this.ctx.drawImage(
+                foodImage,
+                food.x - width / 2,
+                food.y - height / 2,
+                width,
+                height
+            );
         }
     }
 
@@ -345,6 +369,15 @@ export class Renderer {
     }
 
     render(world) {
+        // Reset per-frame tracking
+        this.currentFrame++;
+        this.frameRenderCount.clear();
+        
+        // Ensure canvas context is in a clean state
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.globalAlpha = 1.0;
+        this.ctx.globalCompositeOperation = 'source-over';
+        
         this.clear();
 
         // Update animations
