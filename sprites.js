@@ -13,7 +13,18 @@ export class SpriteAtlas {
         img.draggable = false;
         img.ondragstart = (e) => { e.preventDefault(); return false; };
         const promise = new Promise((resolve, reject) => {
-            img.onload = () => resolve();
+            img.onload = async () => {
+                // Wait for the image to be fully decoded before resolving
+                // This prevents rendering artifacts during the decode phase
+                try {
+                    await img.decode();
+                    resolve();
+                } catch (e) {
+                    // decode() can fail on some images, but if onload fired
+                    // the image should still be usable
+                    resolve();
+                }
+            };
             img.onerror = () => reject(new Error(errorMessage));
         });
         img.src = src;

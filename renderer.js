@@ -79,7 +79,8 @@ export class Renderer {
             const spriteIndex = Math.min(growth, foodSprites.length - 1);
             const foodImage = foodSprites[spriteIndex];
 
-            if (foodImage && foodImage.complete) {
+            // Only draw if image is complete AND has valid dimensions
+            if (foodImage && foodImage.complete && foodImage.naturalWidth > 0) {
                 const scale = 0.3;
                 const width = foodImage.width * scale;
                 const height = foodImage.height * scale;
@@ -153,7 +154,9 @@ export class Renderer {
                 spriteImage = this.spriteAtlas.getScavengerSprite(state, frame);
             }
 
-            if (spriteImage && spriteImage.complete) {
+            // Only draw if image is complete AND has valid dimensions
+            // (width/height are 0 during decode phase even if complete is true)
+            if (spriteImage && spriteImage.complete && spriteImage.naturalWidth > 0) {
                 const width = spriteImage.width * scale;
                 const height = spriteImage.height * scale;
                 // Add slight transparency to dead creatures
