@@ -71,6 +71,22 @@ class World {
         }
     }
 
+    // Ensure all entities stay within current world bounds
+    clampToBounds() {
+        for (const creature of this.creatures) {
+            if (creature.x < 0) creature.x = 0;
+            if (creature.x > this.width) creature.x = this.width;
+            if (creature.y < 0) creature.y = 0;
+            if (creature.y > this.height) creature.y = this.height;
+        }
+        for (const food of this.food) {
+            if (food.x < 0) food.x = 0;
+            if (food.x > this.width) food.x = this.width;
+            if (food.y < 0) food.y = 0;
+            if (food.y > this.height) food.y = this.height;
+        }
+    }
+
     update() {
         if (this.paused) return;
 
@@ -372,6 +388,14 @@ class Vivarium {
     }
 
     loop() {
+        // Sync world bounds with actual canvas size each frame
+        const dims = this.renderer.getDimensions();
+        this.world.width = dims.width;
+        this.world.height = dims.height;
+        
+        // Clamp all entities to current bounds (handles window resize)
+        this.world.clampToBounds();
+        
         this.world.update();
         this.renderer.render(this.world);
         this.updateUI();

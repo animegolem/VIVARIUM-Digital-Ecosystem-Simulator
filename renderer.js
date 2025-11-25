@@ -4,27 +4,39 @@ import { SpriteAtlas, AnimationController } from './sprites.js';
 export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
-        // Use willReadFrequently to hint the browser to keep the canvas in CPU memory
-        // This can help with GPU synchronization issues that cause rendering artifacts
         this.ctx = canvas.getContext('2d', { 
             willReadFrequently: false,
-            alpha: false  // Opaque canvas can be faster and more stable
+            alpha: false
         });
         this.selectedCreature = null;
         this.spriteAtlas = null;
         this.animController = new AnimationController();
         this.ready = false;
+        this.backgroundImage = null;
+        this.backgroundLoaded = false;
         
         // Debug: track renders per frame to catch duplication bugs
         this.frameRenderCount = new Map();
         this.currentFrame = 0;
 
+        // Load background SVG
+        this.loadBackground();
+        
         // Load sprites
         this.loadSprites();
 
         // Set canvas size
         this.resize();
         window.addEventListener('resize', () => this.resize());
+    }
+    
+    loadBackground() {
+        this.backgroundImage = new Image();
+        this.backgroundImage.onload = () => {
+            this.backgroundLoaded = true;
+            console.log('✓ Background loaded');
+        };
+        this.backgroundImage.src = 'images/background.svg';
     }
 
     async loadSprites() {
@@ -58,26 +70,26 @@ export class Renderer {
         const rect = this.canvas.getBoundingClientRect();
         this.canvas.width = rect.width;
         this.canvas.height = rect.height;
+        // Return dimensions so world can sync
+        return { width: rect.width, height: rect.height };
+    }
+
+    // Get current canvas dimensions for world bounds
+    getDimensions() {
+        return { width: this.canvas.width, height: this.canvas.height };
     }
 
     clear() {
-        // Dark background with subtle gradient
-        const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-        gradient.addColorStop(0, '#0a0e1a');
-        gradient.addColorStop(1, '#1a1a2e');
-        this.ctx.fillStyle = gradient;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // Add some ambient "particles" for atmosphere
-        this.drawAmbience();
-    }
-
-    drawAmbience() {
-        this.ctx.fillStyle = 'rgba(0, 255, 65, 0.1)';
-        for (let i = 0; i < 20; i++) {
-            const x = Math.random() * this.canvas.width;
-            const y = Math.random() * this.canvas.height;
-            this.ctx.fillRect(x, y, 1, 1);
+        // Draw SVG background if loaded, otherwise fallback to gradient
+        if (this.backgroundLoaded && this.backgroundImage) {
+            this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+        } else {
+            // Fallback gradient
+            const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            gradient.addColorStop(0, '#0a0e1a');
+            gradient.addColorStop(1, '#1a1a2e');
+            this.ctx.fillStyle = gradient;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         }
     }
 

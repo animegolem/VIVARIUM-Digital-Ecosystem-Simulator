@@ -30,9 +30,11 @@ body {
 .app {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh; /* Constrain to viewport */
+    max-height: 100vh;
     padding: 1rem;
     gap: 1rem;
+    overflow: hidden; /* No scrolling - everything fits */
 }
 
 header {
@@ -58,7 +60,8 @@ h1 {
     display: flex;
     flex: 1;
     gap: 1rem;
-    min-height: 0;
+    min-height: 0; /* Critical for flex children to shrink */
+    overflow: hidden; /* Prevent content from escaping */
 }
 
 /* Canvas */
@@ -67,7 +70,8 @@ h1 {
     position: relative;
     border: 1px solid var(--primary);
     background: #0d1117;
-    min-height: 400px;
+    min-height: 300px;
+    overflow: hidden; /* Clip anything outside bounds */
 }
 
 #ecosystem-canvas {
@@ -98,7 +102,8 @@ h1 {
     flex-direction: column;
     gap: 0.75rem;
     overflow-y: auto;
-    max-height: calc(100vh - 120px);
+    min-height: 0; /* Allow shrinking */
+    flex-shrink: 0; /* Don't shrink width */
 }
 
 .panel {
