@@ -5,7 +5,8 @@
 An interactive, evolving ecosystem where digital creatures live, hunt, reproduce, and evolve through natural selection.
 
 
-https://github.com/user-attachments/assets/7cc2f32d-6845-438c-8066-ff68d9c05036
+https://github.com/user-attachments/assets/54e5f419-6988-4b11-be8e-0afa38288076
+
 
 
 ## Features
