@@ -1,5 +1,7 @@
 # 🔬 VIVARIUM - Digital Ecosystem Simulator
 
+## i told claude he could make whatever he wanted and he made this 
+
 An interactive, evolving ecosystem where digital creatures live, hunt, reproduce, and evolve through natural selection.
 
 
