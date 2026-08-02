@@ -131,13 +131,14 @@ export class Renderer {
         }
     }
 
-    drawCreature(creature) {
+    drawCreature(creature, worldTime = 0) {
         const ctx = this.ctx;
 
         // Determine max frames based on species and state
         const state = this.getCreatureSpriteState(creature);
         const maxFrames = this.getMaxFramesForState(creature.species.type, state);
-        this.animController.registerEntity(creature.id, maxFrames);
+        // Death animations play once and hold; everything else loops
+        this.animController.registerEntity(creature.id, maxFrames, state, state !== 'dead');
 
         if (!this.ready) {
             // Fallback: draw simple circles while sprites load
@@ -195,9 +196,16 @@ export class Renderer {
             if (spriteImage && spriteImage.complete && spriteImage.naturalWidth > 0) {
                 const width = spriteImage.width * scale;
                 const height = spriteImage.height * scale;
-                // Add slight transparency to dead creatures
                 if (!creature.alive) {
-                    ctx.globalAlpha = 0.7;
+                    // Corpses fade out over their cleanup window (180 frames)
+                    // instead of popping out of existence
+                    const decay = Math.min(1, Math.max(0, (worldTime - (creature.deathTime || 0)) / 180));
+                    let alpha = 0.85 * (1 - decay);
+                    // Scavenged carcasses look depleted
+                    if (creature.consumed) {
+                        alpha = Math.min(alpha, 0.35);
+                    }
+                    ctx.globalAlpha = alpha;
                 }
                 ctx.drawImage(spriteImage, -width / 2, -height / 2, width, height);
                 ctx.globalAlpha = 1.0;
@@ -395,14 +403,19 @@ export class Renderer {
         // Update animations
         this.animController.update();
 
+        // Periodically drop animation state for creatures that no longer exist
+        if (this.currentFrame % 120 === 0) {
+            this.animController.prune(new Set(world.creatures.map(c => c.id)));
+        }
+
         // Draw food
         world.food.forEach(food => this.drawFood(food));
 
         // Draw dead creatures (corpses)
-        world.creatures.filter(c => !c.alive).forEach(c => this.drawCreature(c));
+        world.creatures.filter(c => !c.alive).forEach(c => this.drawCreature(c, world.time));
 
         // Draw living creatures
-        world.creatures.filter(c => c.alive).forEach(c => this.drawCreature(c));
+        world.creatures.filter(c => c.alive).forEach(c => this.drawCreature(c, world.time));
 
         // Draw stats overlay
         this.drawStats(world);

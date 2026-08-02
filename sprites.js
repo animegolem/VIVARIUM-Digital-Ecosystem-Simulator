@@ -397,25 +397,46 @@ export class AnimationController {
 
         if (delta >= 1000 / this.frameRate) {
             this.animations.forEach((anim, id) => {
-                anim.frame = (anim.frame + 1) % anim.maxFrames;
+                if (anim.loop) {
+                    anim.frame = (anim.frame + 1) % anim.maxFrames;
+                } else {
+                    // One-shot animations (death) hold their final frame
+                    anim.frame = Math.min(anim.frame + 1, anim.maxFrames - 1);
+                }
             });
             this.lastUpdate = now;
         }
     }
 
-    registerEntity(id, maxFrames) {
-        if (!this.animations.has(id)) {
+    registerEntity(id, maxFrames, stateKey = 'walk', loop = true) {
+        const anim = this.animations.get(id);
+        if (!anim) {
             this.animations.set(id, {
-                frame: Math.floor(Math.random() * maxFrames), // Start at random frame
-                maxFrames: maxFrames
+                // Random start frame desyncs walk cycles across the herd;
+                // one-shots must start from the beginning
+                frame: loop ? Math.floor(Math.random() * maxFrames) : 0,
+                maxFrames: maxFrames,
+                stateKey: stateKey,
+                loop: loop
             });
-        } else {
-            // Update maxFrames if it changed (e.g., creature changed state)
-            const anim = this.animations.get(id);
-            if (anim.maxFrames !== maxFrames) {
-                anim.maxFrames = maxFrames;
-                // Clamp current frame to valid range
-                anim.frame = anim.frame % maxFrames;
+        } else if (anim.stateKey !== stateKey) {
+            // Animation set changed - restart from frame 0 so transitions
+            // (especially death) don't begin mid-cycle
+            anim.stateKey = stateKey;
+            anim.maxFrames = maxFrames;
+            anim.loop = loop;
+            anim.frame = 0;
+        } else if (anim.maxFrames !== maxFrames) {
+            anim.maxFrames = maxFrames;
+            anim.frame = anim.frame % maxFrames;
+        }
+    }
+
+    // Remove animation entries for entities that no longer exist
+    prune(liveIds) {
+        for (const id of this.animations.keys()) {
+            if (!liveIds.has(id)) {
+                this.animations.delete(id);
             }
         }
     }
